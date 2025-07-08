@@ -127,6 +127,9 @@ RUN --mount=type=cache,dst=/var/cache \
     --mount=type=bind,from=akmods-extra,src=/rpms,dst=/tmp/akmods-extra-rpms \
     --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
+    echo "--- DNF5 Exclude Rules Before Kernel Install ---" && \
+    dnf5 config-manager --dump-config | grep exclude && \
+    echo "--- End DNF5 Exclude Rules ---" && \
     /ctx/install-kernel-akmods && \
     dnf5 versionlock clear && \
     dnf5 -y config-manager setopt "*rpmfusion*".enabled=0 && \
