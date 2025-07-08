@@ -110,6 +110,7 @@ RUN --mount=type=cache,dst=/var/cache \
     dnf5 -y config-manager setopt "*bazzite*".priority=1 && \
     dnf5 -y config-manager setopt "*akmods*".priority=2 && \
     dnf5 -y config-manager setopt "*terra*".priority=3 "*terra*".exclude="nerd-fonts topgrade" && \
+    rpm --import https://repos.fyralabs.com/terra42-mesa/key.asc && \
     dnf5 -y config-manager setopt "terra-mesa".enabled=true && \
     dnf5 -y config-manager setopt "terra-nvidia".enabled=false && \
     eval "$(/ctx/dnf5-setopt setopt '*negativo17*' priority=4 exclude='mesa-* *xone*')" && \
