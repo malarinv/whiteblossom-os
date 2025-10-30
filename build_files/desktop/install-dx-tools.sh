@@ -77,10 +77,10 @@ dnf5 install -y \
     sqlite
 
 # Cloud and infrastructure tools
+# Note: terraform is not in Fedora repos - users can install from HashiCorp repo
+# kubectl can be installed via kubernetes-client package or from upstream
 dnf5 install -y \
-    terraform \
-    ansible \
-    kubectl
+    ansible
 
 # Editor integration tools
 dnf5 install -y \
