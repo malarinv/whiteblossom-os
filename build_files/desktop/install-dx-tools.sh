@@ -1,106 +1,67 @@
 #!/usr/bin/bash
 # Install Bazzite DX Developer Tools
-# This script adds developer tools typically found in bazzite-dx variants
-# Since we're starting from bazzite-gnome (gaming only), we need to add DX packages
+# This script mirrors the package list from bazzite-dx
+# Reference: https://github.com/ublue-os/bazzite-dx/blob/main/build_files/20-install-apps.sh
 
 set -eoux pipefail
 
-echo "Installing DX Developer Tools..."
+echo "Installing Bazzite DX Developer Tools..."
 
-# Core development tools and compilers
+# Core DX packages from bazzite-dx (Fedora repos only)
 dnf5 install -y \
-    gcc \
-    gcc-c++ \
-    make \
-    cmake \
-    git \
-    gh \
-    just \
-    mold
+    android-tools \
+    bcc \
+    bpftop \
+    bpftrace \
+    flatpak-builder \
+    ccache \
+    nicstat \
+    numactl \
+    podman-machine \
+    podman-tui \
+    python3-ramalama \
+    qemu-kvm \
+    restic \
+    rclone \
+    sysprof \
+    tiptop \
+    usbmuxd \
+    zsh
 
-# Container and virtualization tools
-dnf5 install -y \
-    podman-compose \
-    podman-docker \
-    distrobox \
-    virt-manager \
-    libvirt \
-    qemu-kvm
+# Install ublue-setup-services from COPR (same as bazzite-dx)
+dnf5 install --enable-repo="copr:copr.fedorainfracloud.org:ublue-os:packages" -y \
+    ublue-setup-services
 
-# Programming language runtimes and tools
-dnf5 install -y \
-    python3 \
-    python3-pip \
-    python3-devel \
-    nodejs \
-    npm \
-    golang \
-    rust \
-    cargo
+# Install VSCode from Microsoft repo (same as bazzite-dx)
+dnf5 config-manager addrepo --set=baseurl="https://packages.microsoft.com/yumrepos/vscode" --id="vscode"
+dnf5 config-manager setopt vscode.enabled=0
+dnf5 config-manager setopt vscode.gpgcheck=0
+dnf5 install --nogpgcheck --enable-repo="vscode" -y \
+    code
 
-# Development utilities
-dnf5 install -y \
-    neovim \
-    vim-enhanced \
-    emacs-nox \
-    htop \
-    btop \
-    bat \
-    ripgrep \
-    fd-find \
-    fzf \
-    zoxide \
-    tldr
+# Install Docker from Docker repo (same as bazzite-dx)
+docker_pkgs=(
+    containerd.io
+    docker-buildx-plugin
+    docker-ce
+    docker-ce-cli
+    docker-compose-plugin
+)
+dnf5 config-manager addrepo --from-repofile="https://download.docker.com/linux/fedora/docker-ce.repo"
+dnf5 config-manager setopt docker-ce-stable.enabled=0
+dnf5 install -y --enable-repo="docker-ce-stable" "${docker_pkgs[@]}" || {
+    # Fallback to test repo for newer Fedora versions
+    if (($(lsb_release -sr) >= 42)); then
+        echo "::info::Missing docker packages, falling back to test repos..."
+        dnf5 install -y --enablerepo="docker-ce-test" "${docker_pkgs[@]}"
+    fi
+}
 
-# Terminal multiplexers and shells
-dnf5 install -y \
-    tmux \
-    zsh \
-    fish
+# Load iptable_nat module for docker-in-docker (same as bazzite-dx)
+mkdir -p /etc/modules-load.d && cat >>/etc/modules-load.d/ip_tables.conf <<EOF
+iptable_nat
+EOF
 
-# Network and debugging tools
-dnf5 install -y \
-    wget \
-    curl \
-    netcat \
-    nmap \
-    wireshark \
-    tcpdump \
-    iperf3 \
-    mtr
-
-# Database clients
-dnf5 install -y \
-    postgresql \
-    mariadb \
-    redis \
-    sqlite
-
-# Cloud and infrastructure tools
-# Note: terraform is not in Fedora repos - users can install from HashiCorp repo
-# kubectl can be installed via kubernetes-client package or from upstream
-dnf5 install -y \
-    ansible
-
-# Editor integration tools
-dnf5 install -y \
-    ctags \
-    cscope
-
-# System monitoring and profiling
-dnf5 install -y \
-    sysstat \
-    perf \
-    strace \
-    ltrace
-
-# Documentation tools
-dnf5 install -y \
-    pandoc \
-    texlive-scheme-basic
-
-# Enable libvirtd for virtualization
-systemctl enable libvirtd
-
-echo "DX Developer Tools installation complete!"
+echo "Bazzite DX Developer Tools installation complete!"
+echo "Note: Additional dev tools can be installed via distrobox/toolbox as needed"
 
