@@ -64,8 +64,8 @@ dnf5 install -y \
     kf6-kwindowsystem
 
 # Gaming-specific KDE packages (from bazzite)
+# Note: steamdeck-kde-presets-desktop is Steam Deck specific, not available in bazzite-gnome
 dnf5 install -y \
-    steamdeck-kde-presets-desktop \
     krdp \
     kdeconnectd \
     kdeplasma-addons
