@@ -35,7 +35,8 @@
 - [x] 4.5 Add KDE-specific gaming optimizations
 - [x] 4.6 Test for actual package conflicts (don't preemptively remove)
 - [x] 4.7 Remove only truly conflicting packages (document reason)
-- [ ] 4.8 Test package installation completes without errors
+- [x] 4.8 Fix package name typos (plasma-welcomekmix → plasma-welcome + kmix)
+- [ ] 4.9 Test package installation completes without errors in CI/CD
 
 ## 5. Display Manager Configuration
 

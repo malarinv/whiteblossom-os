@@ -177,4 +177,5 @@ Some packages considered during initial implementation were not available in Fed
 - Modified `build_files/build.sh` to execute scripts with `bash` directly instead of using `chmod +x`, as the container mount context is read-only
 - All package installations validated against Fedora 43 repository availability
 - External repositories (VSCode, Docker) configured exactly as bazzite-dx does
+- Fixed package name typo in KDE installation: `plasma-welcomekmix` → `plasma-welcome` + `kmix` (separate packages)
 
