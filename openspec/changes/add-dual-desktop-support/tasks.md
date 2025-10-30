@@ -157,7 +157,7 @@
 ## 14. CI/CD Updates
 
 - [x] 14.1 Fix GitHub Actions disk space issues (remove pre-installed SDKs)
-- [ ] 14.2 Verify GitHub Actions workflow builds successfully with new base
+- [x] 14.2 Verify GitHub Actions workflow builds successfully with new base
 - [ ] 14.3 Update build workflow labels/tags if needed
 - [ ] 14.4 Test ISO generation with new configuration
 - [ ] 14.5 Verify container signing works
