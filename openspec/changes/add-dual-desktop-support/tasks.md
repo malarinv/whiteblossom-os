@@ -61,7 +61,10 @@
 - [x] 7.2 Update main `build_files/build.sh` to call KDE installation  
 - [x] 7.3 Ensure proper script execution order (base → DX → KDE)
 - [x] 7.4 Add error handling for package conflicts
-- [ ] 7.5 Test build script runs successfully
+- [x] 7.5 Fix script execution in read-only container mount (use bash instead of chmod)
+- [x] 7.6 Remove unavailable Fedora 43 packages (eza, terraform, kubectl, universal-ctags)
+- [x] 7.7 Align DX tools installation with bazzite-dx reference
+- [ ] 7.8 Test build script runs successfully end-to-end
 
 ## 8. System Services Configuration
 

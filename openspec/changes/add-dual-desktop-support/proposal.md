@@ -157,3 +157,18 @@ sudo systemctl reboot
 - Test VM image builds (QCOW2/ISO) with both desktops
 - Verify existing customizations still work
 
+### Implementation Notes
+
+**Package Availability Issues (Fedora 43)**:
+During implementation, the following packages were found to be unavailable in Fedora 43 repositories and were removed from the DX tools installation:
+- `eza` - Modern ls replacement (not in Fedora repos; users can install from COPR if needed)
+- `terraform` - Infrastructure as code tool (not in Fedora repos; users can install from HashiCorp's official repository)
+- `kubectl` - Kubernetes CLI (not in Fedora repos; users can install `kubernetes-client` or from upstream)
+- `universal-ctags` - Enhanced ctags (not in Fedora repos; standard `ctags` package is available)
+
+These removals align with the bazzite-dx approach of only including packages available in official Fedora repositories. External packages can be installed by users through distrobox, toolbox, or third-party repositories as needed.
+
+**Build Script Adjustments**:
+- Modified `build_files/build.sh` to execute scripts with `bash` directly instead of using `chmod +x`, as the container mount context is read-only
+- All package installations validated against Fedora 43 repository availability
+
