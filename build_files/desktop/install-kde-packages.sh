@@ -73,7 +73,6 @@ dnf5 install -y \
 # Additional KDE utilities
 dnf5 install -y \
     kde-partitionmanager \
-    rom-properties-kf6 \
     kio-extras \
     kio-gdrive \
     kio-admin
