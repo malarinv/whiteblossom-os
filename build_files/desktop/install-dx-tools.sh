@@ -85,7 +85,6 @@ dnf5 install -y \
 # Editor integration tools
 dnf5 install -y \
     ctags \
-    universal-ctags \
     cscope
 
 # System monitoring and profiling
