@@ -40,9 +40,9 @@ echo "=========================================="
 if [ -f "${DESKTOP_DIR}/install-dx-tools.sh" ]; then
     chmod +x "${DESKTOP_DIR}/install-dx-tools.sh"
     "${DESKTOP_DIR}/install-dx-tools.sh"
-elif [ -f /ctx/desktop/install-dx-tools.sh ]; then
-    chmod +x /ctx/desktop/install-dx-tools.sh
-    /ctx/desktop/install-dx-tools.sh
+elif [ -f /ctx/build_files/desktop/install-dx-tools.sh ]; then
+    chmod +x /ctx/build_files/desktop/install-dx-tools.sh
+    /ctx/build_files/desktop/install-dx-tools.sh
 else
     echo "ERROR: install-dx-tools.sh not found in either local or /ctx path"
     exit 1
@@ -62,9 +62,9 @@ echo "======================================================"
 if [ -f "${DESKTOP_DIR}/install-kde-packages.sh" ]; then
     chmod +x "${DESKTOP_DIR}/install-kde-packages.sh"
     "${DESKTOP_DIR}/install-kde-packages.sh"
-elif [ -f /ctx/desktop/install-kde-packages.sh ]; then
-    chmod +x /ctx/desktop/install-kde-packages.sh
-    /ctx/desktop/install-kde-packages.sh
+elif [ -f /ctx/build_files/desktop/install-kde-packages.sh ]; then
+    chmod +x /ctx/build_files/desktop/install-kde-packages.sh
+    /ctx/build_files/desktop/install-kde-packages.sh
 else
     echo "ERROR: install-kde-packages.sh not found in either local or /ctx path"
     exit 1
@@ -84,9 +84,9 @@ echo "========================================"
 if [ -f "${DESKTOP_DIR}/install-networking-tools.sh" ]; then
     chmod +x "${DESKTOP_DIR}/install-networking-tools.sh"
     "${DESKTOP_DIR}/install-networking-tools.sh"
-elif [ -f /ctx/desktop/install-networking-tools.sh ]; then
-    chmod +x /ctx/desktop/install-networking-tools.sh
-    /ctx/desktop/install-networking-tools.sh
+elif [ -f /ctx/build_files/desktop/install-networking-tools.sh ]; then
+    chmod +x /ctx/build_files/desktop/install-networking-tools.sh
+    /ctx/build_files/desktop/install-networking-tools.sh
 else
     echo "WARNING: install-networking-tools.sh not found. Skipping networking tools installation."
 fi
@@ -105,9 +105,9 @@ echo "==========================================="
 if [ -f "${DESKTOP_DIR}/configure-system.sh" ]; then
     chmod +x "${DESKTOP_DIR}/configure-system.sh"
     "${DESKTOP_DIR}/configure-system.sh"
-elif [ -f /ctx/desktop/configure-system.sh ]; then
-    chmod +x /ctx/desktop/configure-system.sh
-    /ctx/desktop/configure-system.sh
+elif [ -f /ctx/build_files/desktop/configure-system.sh ]; then
+    chmod +x /ctx/build_files/desktop/configure-system.sh
+    /ctx/build_files/desktop/configure-system.sh
 else
     echo "WARNING: configure-system.sh not found. Skipping system configuration."
 fi
