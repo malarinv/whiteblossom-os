@@ -1,24 +1,119 @@
-# image-template
+# WhiteBlossom OS
 
-# Purpose
+## Purpose
 
-This repository is meant to be a template for building your own custom Universal Blue image. This template is the recommended way to make customizations to any image published by the Universal Blue Project:
-- [Aurora](https://getaurora.dev/)
-- [Bazzite](https://bazzite.gg/)
-- [Bluefin](https://projectbluefin.io/)
-- [uCore](https://projectucore.io/)
-- [main](https://github.com/ublue-os/main/)
-- [hwe](https://github.com/ublue-os/hwe/)
+WhiteBlossom OS is a custom Universal Blue image based on [Bazzite](https://bazzite.gg/) that provides a dual desktop experience with both GNOME and KDE Plasma in a single OS image. It's designed for a multi-user environment where different users have different desktop and workflow preferences.
 
-or any other base image if you want to start from scratch:
+### Key Features
 
-- Fedora: `quay.io/fedora/fedora-bootc:41`
-- CentOS Stream 9: `quay.io/centos-bootc/centos-bootc:stream9`
-- CentOS Stream 10 (in development): `quay.io/centos-bootc/centos-bootc:stream10`
+- **Dual Desktop Environments**: Both GNOME Shell and KDE Plasma 6 available at login
+- **Gaming Optimizations**: Full Bazzite gaming stack (Gamescope, Steam integration, controller support)
+- **Developer Tools**: Complete DX developer toolchain included
+- **NVIDIA Support**: nvidia-open drivers for optimal GPU performance
+- **Privacy-Focused Networking**: Self-hosted mesh VPN options (Headscale, ZeroTier)
+- **Multi-User Ready**: Supports simultaneous sessions with different desktops
 
-This template includes a Containerfile and a Github workflow for building the container image, signing, and proper metadata to be listed on [artifacthub](https://artifacthub.io/). As soon as the workflow is enabled in your repository, it will build the container image and push it to the Github Container Registry.
+## Base Image
 
-# Prerequisites
+**Current Base**: `ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable`
+
+WhiteBlossom OS builds on Bazzite's GNOME variant with nvidia-open drivers, then adds:
+- DX developer tools and runtimes
+- KDE Plasma desktop environment
+- Privacy-focused networking tools
+- Multi-user optimizations
+
+**Previous Base**: `ghcr.io/ublue-os/bluefin-dx-nvidia-open:stable` (deprecated)
+
+## System Requirements
+
+### Minimum Requirements
+- **RAM**: 16GB (for dual user sessions)
+- **CPU**: Modern multi-core processor (4+ cores)
+- **GPU**: NVIDIA GPU with nvidia-open driver support
+- **Disk**: 100GB+ (OS, games, and development projects)
+
+### Recommended Requirements
+- **RAM**: 32GB (comfortable dual-session experience)
+- **CPU**: 6+ cores for simultaneous gaming and development
+- **GPU**: Modern NVIDIA GPU (RTX series recommended)
+- **Disk**: 256GB+ NVMe SSD
+
+## Desktop Environments
+
+WhiteBlossom OS includes both GNOME and KDE Plasma desktops:
+
+### GNOME (Default)
+- Clean, distraction-free interface
+- Excellent for privacy-focused users
+- Strong Wayland support
+- GNOME 47+ with Bazzite gaming extensions
+
+### KDE Plasma
+- Highly customizable interface
+- Rich feature set for power users
+- Gaming optimizations from Bazzite KDE variant
+- KDE Plasma 6 with Wayland support
+
+### Switching Desktops
+
+At the login screen (GDM), click the gear icon (⚙️) to select between:
+- **GNOME** - GNOME Shell (Wayland)
+- **Plasma** - KDE Plasma (Wayland)
+
+Your choice persists across reboots. You can switch anytime by logging out and selecting a different session.
+
+## Multi-User Configuration
+
+WhiteBlossom OS supports multiple users logged in simultaneously with different desktops:
+
+- **User 1** can be in GNOME session
+- **User 2** can be in KDE Plasma session
+- Both sessions run concurrently without interference
+- Standard Linux file permissions keep data isolated
+- Each user maintains independent desktop configurations
+
+**Note**: Heavy workloads (gaming, compilation) in one session may impact responsiveness in the other. 32GB RAM recommended for intensive concurrent use.
+
+## Privacy & Networking
+
+### Self-Hosted Mesh VPN
+
+WhiteBlossom OS replaces Tailscale with privacy-focused alternatives:
+
+#### Headscale
+- Self-hosted Tailscale control server
+- Full control over coordination and data
+- Compatible with Tailscale clients
+- Configuration: `/etc/headscale/config.yaml`
+
+```bash
+# Enable Headscale
+sudo systemctl enable --now headscale.service
+```
+
+#### ZeroTier
+- Decentralized mesh VPN
+- Alternative to Headscale/Tailscale
+- Can self-host network controller
+
+```bash
+# Enable ZeroTier
+sudo systemctl enable --now zerotier-one.service
+sudo zerotier-cli join <network-id>
+```
+
+See `/usr/share/doc/whiteblossom-os/mesh-vpn-guide.md` for detailed setup.
+
+### Privacy Features
+
+- **SELinux**: Enforcing mode (system-wide security)
+- **Firewall**: Configured with sensible defaults
+- **Privacy Tools**: Available but user-optional
+- **Per-User Control**: Privacy settings configurable per account
+- **No Telemetry**: Fedora/Bazzite defaults (privacy-respecting)
+
+## Prerequisites
 
 Working knowledge in the following topics:
 
@@ -32,18 +127,87 @@ Working knowledge in the following topics:
 - Github Workflows
   - https://docs.github.com/en/actions/using-workflows
 
-# How to Use
+# Installation
 
-## Template
+## New Installation
 
-Select `Use this Template` and create a new repository from it. To enable the workflows, you may need to go the `Actions` tab of the new repository and click to enable workflows.
+1. Download the latest ISO from releases or build your own
+2. Boot from ISO and install normally
+3. After installation, at the login screen, select your preferred desktop:
+   - Click the gear icon (⚙️) next to "Sign In"
+   - Choose "GNOME" or "Plasma"
+4. Log in and enjoy!
+
+## Migration from Bluefin
+
+**⚠️ BREAKING CHANGE**: WhiteBlossom OS has migrated from Bluefin DX to Bazzite GNOME base.
+
+### Migration Steps
+
+```bash
+# Switch to WhiteBlossom OS
+sudo bootc switch --transport registry ghcr.io/malarinv/whiteblossom-os:latest
+
+# Reboot to apply
+sudo systemctl reboot
+```
+
+After reboot:
+1. You'll see both GNOME and Plasma options at login
+2. Select your preferred desktop environment
+3. Your user data, flatpaks, and containers are preserved
+
+### What Changes
+
+- **Base system**: Bluefin → Bazzite
+- **NVIDIA drivers**: May switch to nvidia-open (check with `nvidia-smi`)
+- **Desktop options**: Now have both GNOME and KDE Plasma
+- **Networking**: Tailscale removed, Headscale/ZeroTier available
+- **Developer tools**: Full DX suite included
+
+### Rollback
+
+If issues occur:
+
+```bash
+# View available images
+sudo bootc status
+
+# Rollback to previous deployment
+sudo bootc rollback
+
+# Or switch back to Bluefin
+sudo bootc switch ghcr.io/ublue-os/bluefin-dx-nvidia-open:stable
+```
+
+## Verifying Installation
+
+```bash
+# Check current deployment
+rpm-ostree status
+
+# Verify nvidia drivers
+nvidia-smi
+
+# Check desktop environments
+ls /usr/share/xsessions/
+ls /usr/share/wayland-sessions/
+```
+
+# Development
+
+## Building Custom Images
+
+WhiteBlossom OS is built on the Universal Blue image-template pattern.
 
 ## Containerfile
 
-This file defines the operations used to customize the selected image. It contains examples of possible modifications, including how to:
-- change the upstream from which the custom image is derived
-- add additional RPM packages
-- add binaries as a layer from other images
+This file defines the operations used to customize the selected image. It:
+- Starts from Bazzite GNOME nvidia-open base
+- Adds DX developer tools
+- Installs KDE Plasma desktop environment
+- Configures privacy-focused networking (Headscale, ZeroTier)
+- Applies system configurations for both desktops
 
 ## Building an ISO
 

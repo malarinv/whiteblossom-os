@@ -1,0 +1,167 @@
+# KDE Global Shortcuts Configuration for WhiteBlossom OS
+# This file configures system-wide keyboard shortcuts for KDE Plasma
+# 
+# Standard GNOME shortcuts are replicated here for consistency:
+# - Ctrl+Alt+T: Launch Terminal (Ptyxis)
+
+[kscreenlocker][Global Shortcuts]
+Lock Session=Ctrl+Alt+L
+Show Dashboard=
+
+[kmix][Global Shortcuts]
+decrease_microphone_volume=
+decrease_volume=
+increase_microphone_volume=
+increase_volume=
+mute_microphone=
+mute=
+
+[mediacontrol][Global Shortcuts]
+mediavolumedown=
+mediavolumeup=
+medianext=
+mediaplay=
+mediaprevious=
+mediastop=
+
+[kwin][Global Shortcuts]
+Activate Window Demanding Attention=
+Cycle Window Tabs Alternative=
+Cycle Window Tabs=
+Debug Console=
+Decrease Opacity=
+Expose=
+ExposeAll=
+ExposeClass=
+Increase Opacity=
+Insert=
+Kill Window=
+MoveMouseToCenter=
+MoveMouseToFocus=
+Move Window Down=
+Move Window In Page Direction=
+Move Window Left=
+Move Window Out of Page Direction=
+Move Window Right=
+Move Window Up=
+MoveZoomDown=
+MoveZoomLeft=
+MoveZoomRight=
+MoveZoomUp=
+New Workspace=
+Next Workspace=
+Opposite Corner=
+Overview=
+Previous Workspace=
+Quick Tile Bottom=
+Quick Tile Bottom-Left=
+Quick Tile Bottom-Right=
+Quick Tile Left=
+Quick Tile Right=
+Quick Tile Top=
+Quick Tile Top-Left=
+Quick Tile Top-Right=
+Remove Workspace=
+Resize Window Down=
+Resize Window In Page Direction=
+Resize Window Left=
+Resize Window Out of Page Direction=
+Resize Window Right=
+Resize Window Up=
+ResizeZoomDown=
+ResizeZoomLeft=
+ResizeZoomRight=
+ResizeZoomUp=
+Setup Window Shortcut=
+Show Dashboard=
+Show Desktop=
+SlideBackgroundDown=
+SlideBackgroundLeft=
+SlideBackgroundRight=
+SlideBackgroundUp=
+SlideWindow Down=
+SlideWindow In Page Direction=
+SlideWindow Left=
+SlideWindow Out of Page Direction=
+SlideWindow Right=
+SlideWindow Up=
+Suspend Compositing=
+Switch One Desktop Down=
+Switch One Desktop Left=
+Switch One Desktop Right=
+Switch One Desktop Up=
+Switch One Workspace Down=
+Switch One Workspace Left=
+Switch One Workspace Right=
+Switch One Workspace Up=
+Switch to Desktop 1=Ctrl+F1
+Switch to Desktop 2=Ctrl+F2
+Switch to Desktop 3=Ctrl+F3
+Switch to Desktop 4=Ctrl+F4
+Switch to Next Desktop=
+Switch to Next Workspace=Ctrl+Alt+Right
+Switch to Previous Workspace=Ctrl+Alt+Left
+Switch Window Down=Alt+Down
+Switch Window Left=Alt+Left
+Switch Window Right=Alt+Right
+Switch Window Up=Alt+Up
+Switch to Window 1=
+Switch to Window 10=
+Switch to Window 2=
+Switch to Window 3=
+Switch to Window 4=
+Switch to Window 5=
+Switch to Window 6=
+Switch to Window 7=
+Switch to Window 8=
+Switch to Window 9=
+Tile Window Down=
+Tile Window Left=
+Tile Window Right=
+Tile Window Up=
+Toggle Floating=
+Toggle Night Color=
+Toggle Presentation Mode=
+Toggle Screen Reader=
+Toggle Window Maximize Horizontal=
+Toggle Window Maximize Vertical=
+Toggle Window Maximize=
+Untile Window=
+Walk Through Desktop list=
+Walk Through Desktops=
+Walk Through Window Tabs Alternative=
+Walk Through Window Tabs=
+Walk Through Windows Alternative=
+Walk Through Windows=
+Window Operations Menu=
+Window to Desktop 1=
+Window to Desktop 2=
+Window to Desktop 3=
+Window to Desktop 4=
+Window to Desktop 5=
+Window to Desktop 6=
+Window to Desktop 7=
+Window to Desktop 8=
+Window to Desktop 9=
+Window to Next Desktop=
+Window to Next Workspace=Shift+Ctrl+Alt+Right
+Window to Previous Workspace=Shift+Ctrl+Alt+Left
+Zoom In=Meta+Plus
+Zoom Out=Meta+Minus
+Zoom Reset=Meta+0
+
+# WhiteBlossom OS Custom Shortcuts
+[org.kde.kglobalshortcuts][ptyxis][Global Shortcuts]
+new-window=Ctrl+Alt+T
+
+[ActivityManager][Global Shortcuts]
+switch-to-activity-=
+
+[org.kde.dolphin][Global Shortcuts]
+_launch=Meta+E
+new-tab=Ctrl+T
+new-window=Ctrl+N
+
+[org.kde.konsole][Global Shortcuts]
+new-tab=Ctrl+Shift+T
+new-window=Ctrl+Shift+N
