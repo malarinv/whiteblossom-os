@@ -183,3 +183,9 @@ Some packages considered during initial implementation were not available in Fed
 - Removed `rom-properties-kf6` - not available in Fedora 43 repositories
 - Removed `print-manager` - not available in Fedora 43; users can use `system-config-printer` instead
 
+**CI/CD Infrastructure Adjustments**:
+- Added disk space cleanup step to GitHub Actions workflow
+- Removes pre-installed software not needed for container builds: Dotnet SDK, Android SDK, Haskell, CodeQL cache
+- Frees up ~20-25GB of additional disk space for large multi-desktop container builds
+- Reference: https://carlosbecker.com/posts/github-actions-disk-space/
+
