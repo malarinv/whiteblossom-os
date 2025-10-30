@@ -45,7 +45,6 @@ dnf5 install -y \
     emacs-nox \
     htop \
     btop \
-    eza \
     bat \
     ripgrep \
     fd-find \
