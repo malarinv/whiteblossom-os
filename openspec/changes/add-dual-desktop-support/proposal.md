@@ -179,4 +179,5 @@ Some packages considered during initial implementation were not available in Fed
 - External repositories (VSCode, Docker) configured exactly as bazzite-dx does
 - Fixed package name typo in KDE installation: `plasma-welcomekmix` → `plasma-welcome` + `kmix` (separate packages)
 - Removed `khotkeys` - deprecated in Plasma 6 (Fedora 43), functionality now integrated into System Settings
+- Removed `steamdeck-kde-presets-desktop` - Steam Deck specific package not available in bazzite-gnome base
 
