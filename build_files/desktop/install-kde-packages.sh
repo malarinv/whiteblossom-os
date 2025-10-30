@@ -103,8 +103,8 @@ dnf5 install -y \
     krunner
 
 # Print support
-dnf5 install -y \
-    print-manager
+# Note: print-manager is not available in Fedora 43 - CUPS/system-config-printer are available instead
+# Users can use system-config-printer for print management
 
 # Package to test and potentially remove if they cause conflicts
 # These will be tested first, only removed if issues occur
