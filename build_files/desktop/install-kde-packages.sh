@@ -49,7 +49,6 @@ dnf5 install -y \
     kinfocenter \
     kde-cli-tools \
     kde-gtk-config \
-    khotkeys \
     kmenuedit \
     kpipewire \
     kglobalacceld \
