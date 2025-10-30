@@ -1,0 +1,102 @@
+# KDE Global Configuration for WhiteBlossom OS
+# This file sets system-wide defaults for KDE Plasma
+
+[General]
+BrowserApplication=firefox.desktop
+DesktopTextColor=255,255,255
+SingleClick=false
+
+[KDE]
+LookAndFeelPackage=org.kde.breeze.desktop
+contrast=0
+
+[kdeclarative]
+WheelScrollLines=3
+
+[KFileDialog Settings]
+Breadcrumb Navigation=true
+Decoration font=Noto Sans,10,-1,5,50,0,0,0,0,0
+Show Bookmarks=false
+Show Full Path=false
+Show Inline Previews=true
+Show Preview=true
+Show Speedbar=true
+Show hidden files=false
+Sort by=Name
+Sort directories first=true
+View Style=DetailedList
+
+[KShortcutsDialog Settings]
+Dialog Size=600,480
+
+[KTextEditor Document]
+Word Wrap=false
+
+[KTextEditor Renderer]
+Animate=false
+Font=Noto Mono,10,-1,5,50,0,0,0,0,0
+Scroll Past End=false
+Show Indentation Lines=false
+Show Line Count=true
+Show Scrollbars=true
+Show Tabs=true
+Show Word Count=false
+Tab Width=4
+
+[KTextEditor View]
+Allow Mark Menu=true
+Auto Brackets=true
+Auto Center Lines=3
+Bookmark Menu Mark=true
+Dynamic Word Wrap=true
+Folding Bar=true
+Icon Bar=true
+Line Number Bar=true
+Scroll Bar Marks=false
+Scroll Bar Mini Map=true
+Scroll Bar Mini Map All=false
+Scroll Bar Preview=false
+Show Bookmarks=false
+Show Changing Lines=false
+Show Documentation Comment=false
+Show Folding Markers=false
+Show Icon Bar=false
+Show Indentation Lines=false
+Show Line Endings=false
+Show Line Numbers=true
+Show NonPrintable Spaces=false
+Show Selection=true
+Show Spaces=false
+Show Tabs=false
+Show Word Boundary=false
+Smart Home=true
+TextDragAndDrop=true
+Vi Input Mode=false
+Vi Input Mode Finalizing Character Count=0
+Word Wrap Column=80
+Word Wrap Dynamic Width Indicator=80
+Word Wrap Indicator Width=80
+
+[Locale]
+Country=US
+Language=en_US
+
+[Notification Messages]
+ConfirmRemoveLocalShortcut=true
+ConfirmRemoveGlobalShortcut=true
+DeleteAllEmptiesDialog=true
+Revert To Default Desktop Shortcuts=true
+
+[Start Menu]
+GroupHiddenFiles=true
+SortCaseSensitively=false
+
+[Toolbar style]
+ToolButtonStyle=TextBesideIcon
+
+[WM]
+ColorScheme=Breeze
+Font=Noto Sans,10,-1,5,50,0,0,0,0,0
+FocusPolicy=ClickToFocus
+MaximizeMode=0
+TitleBarButtonsOrder=HISX
