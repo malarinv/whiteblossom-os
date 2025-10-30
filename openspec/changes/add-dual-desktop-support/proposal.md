@@ -49,11 +49,13 @@ This change will:
 - GDM display manager (pre-installed)
 - GNOME-specific applications (pre-installed)
 
-**DX Developer Tools** (to be added from bazzite-dx):
-- Development IDEs and tools
-- Container development tooling  
-- Language runtimes and SDKs
-- (Exact package list to be determined from bazzite-dx Containerfile inspection)
+**DX Developer Tools** (from bazzite-dx - exact mirror):
+- **Core Tools**: android-tools, bcc, bpftop, bpftrace, flatpak-builder, ccache, nicstat, numactl, podman-machine, podman-tui, python3-ramalama, qemu-kvm, restic, rclone, sysprof, tiptop, usbmuxd, zsh
+- **VSCode**: Installed from Microsoft repository
+- **Docker**: Full Docker CE suite (docker-ce, docker-ce-cli, docker-buildx-plugin, docker-compose-plugin, containerd.io)
+- **ublue-setup-services**: Setup utilities from ublue-os COPR
+
+Note: Bazzite-dx uses a minimal approach - additional dev tools (compilers, language runtimes, editors) are expected to be installed via distrobox/toolbox containers
 
 **Privacy & Security Tools** (for flexible user configuration):
 - Privacy-focused browser extensions and configurations (user-installable)
@@ -159,16 +161,20 @@ sudo systemctl reboot
 
 ### Implementation Notes
 
-**Package Availability Issues (Fedora 43)**:
-During implementation, the following packages were found to be unavailable in Fedora 43 repositories and were removed from the DX tools installation:
-- `eza` - Modern ls replacement (not in Fedora repos; users can install from COPR if needed)
-- `terraform` - Infrastructure as code tool (not in Fedora repos; users can install from HashiCorp's official repository)
-- `kubectl` - Kubernetes CLI (not in Fedora repos; users can install `kubernetes-client` or from upstream)
-- `universal-ctags` - Enhanced ctags (not in Fedora repos; standard `ctags` package is available)
+**DX Tools Package List Alignment**:
+Initial implementation included ~50 additional packages (gcc, nodejs, rust, neovim, databases, etc.) that are NOT in bazzite-dx. After reviewing the actual bazzite-dx source, the package list was corrected to exactly mirror bazzite-dx's minimal approach:
+- **Only 18 core packages from Fedora repos** (android-tools, bcc, bpftop, bpftrace, flatpak-builder, ccache, nicstat, numactl, podman-machine, podman-tui, python3-ramalama, qemu-kvm, restic, rclone, sysprof, tiptop, usbmuxd, zsh)
+- **VSCode from Microsoft repo** (same as bazzite-dx)
+- **Docker CE suite from Docker repo** (same as bazzite-dx)
+- **ublue-setup-services from COPR** (same as bazzite-dx)
 
-These removals align with the bazzite-dx approach of only including packages available in official Fedora repositories. External packages can be installed by users through distrobox, toolbox, or third-party repositories as needed.
+Bazzite-dx intentionally keeps the base image minimal - developers are expected to use distrobox/toolbox containers for language-specific toolchains and additional development tools. This reduces base image size and provides better isolation.
+
+**Package Availability Notes**:
+Some packages considered during initial implementation were not available in Fedora 43 repositories (eza, terraform, kubectl, universal-ctags). However, these were removed anyway during alignment with bazzite-dx's actual package list.
 
 **Build Script Adjustments**:
 - Modified `build_files/build.sh` to execute scripts with `bash` directly instead of using `chmod +x`, as the container mount context is read-only
 - All package installations validated against Fedora 43 repository availability
+- External repositories (VSCode, Docker) configured exactly as bazzite-dx does
 
