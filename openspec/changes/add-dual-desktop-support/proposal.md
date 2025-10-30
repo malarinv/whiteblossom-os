@@ -181,4 +181,5 @@ Some packages considered during initial implementation were not available in Fed
 - Removed `khotkeys` - deprecated in Plasma 6 (Fedora 43), functionality now integrated into System Settings
 - Removed `steamdeck-kde-presets-desktop` - Steam Deck specific package not available in bazzite-gnome base
 - Removed `rom-properties-kf6` - not available in Fedora 43 repositories
+- Removed `print-manager` - not available in Fedora 43; users can use `system-config-printer` instead
 
