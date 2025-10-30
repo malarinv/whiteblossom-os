@@ -17,7 +17,8 @@ dnf5 install -y \
     plasma-systemmonitor \
     plasma-thunderbolt \
     plasma-vault \
-    plasma-welcomekmix \
+    plasma-welcome \
+    kmix \
     sddm \
     sddm-breeze \
     sddm-kcm \
