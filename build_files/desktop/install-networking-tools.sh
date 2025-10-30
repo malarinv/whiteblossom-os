@@ -99,17 +99,13 @@ echo "  3. Configure Tailscale clients to use their Headscale server"
 # Disable Headscale COPR to avoid it being enabled in final image
 dnf5 copr disable -y jonathanspw/headscale
 
-# Install ZeroTier from RPMFusion (already enabled in Bazzite)
-echo "Installing ZeroTier-One..."
-dnf5 install -y zerotier-one
-
-# Disable ZeroTier service by default (user will enable when ready)
-systemctl disable zerotier-one.service || true
-
-echo "ZeroTier-One installed. Service is disabled by default."
-echo "To use ZeroTier, users should:"
-echo "  1. Run: sudo systemctl enable --now zerotier-one.service"
-echo "  2. Join a network: sudo zerotier-cli join <network-id>"
+# ZeroTier-One is not available in Fedora 43 repositories
+# Users can install it manually from ZeroTier's official repository if needed
+echo "ZeroTier-One is not pre-installed."
+echo "To install ZeroTier, users should:"
+echo "  1. Add ZeroTier repository: curl -s https://install.zerotier.com | sudo bash"
+echo "  2. Enable service: sudo systemctl enable --now zerotier-one.service"
+echo "  3. Join a network: sudo zerotier-cli join <network-id>"
 
 # Add documentation file
 mkdir -p /usr/share/doc/whiteblossom-os
@@ -136,9 +132,10 @@ your coordination server and data.
 3. Configure Tailscale clients to point to your Headscale server
 4. Documentation: https://github.com/juanfont/headscale
 
-## ZeroTier
+## ZeroTier (Manual Installation)
 
 ZeroTier is a decentralized mesh VPN with optional self-hosted network controllers.
+Note: ZeroTier is NOT pre-installed as it's not available in Fedora repositories.
 
 ### Benefits:
 - Decentralized architecture
@@ -147,9 +144,10 @@ ZeroTier is a decentralized mesh VPN with optional self-hosted network controlle
 - Good for hybrid cloud/on-premise scenarios
 
 ### Setup:
-1. Enable service: `sudo systemctl enable --now zerotier-one.service`
-2. Join network: `sudo zerotier-cli join <network-id>`
-3. Optionally self-host controller: https://docs.zerotier.com/self-hosting/network-controllers
+1. Install ZeroTier: `curl -s https://install.zerotier.com | sudo bash`
+2. Enable service: `sudo systemctl enable --now zerotier-one.service`
+3. Join network: `sudo zerotier-cli join <network-id>`
+4. Optionally self-host controller: https://docs.zerotier.com/self-hosting/network-controllers
 
 ## Why Not Tailscale?
 
