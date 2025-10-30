@@ -71,7 +71,7 @@ Note: Bazzite-dx uses a minimal approach - additional dev tools (compilers, lang
   - Provides mesh VPN without relying on Tailscale's commercial servers
   - Full control over coordination server for privacy
 - **ZeroTier-One** - Decentralized mesh VPN
-  - Installed from [RPMFusion repositories](https://rpmfusion.org/Configuration) (already enabled in Bazzite)
+  - Installed from [RPMFusion Non-Free](https://rpmfind.net/linux/rpm2html/search.php?query=zerotier-one) for Fedora 43
   - Alternative VPN solution for flexible networking
   - Self-hosted network control option available
 - **Tailscale removal** - Tailscale (present in Bazzite base) will be removed in favor of Headscale
