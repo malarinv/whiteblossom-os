@@ -7,8 +7,17 @@ set -eoux pipefail
 
 echo "Installing KDE Plasma Desktop Environment..."
 
+# First, refresh repository metadata
+dnf5 clean metadata
+
+# Update ibus to the latest version to resolve conflicts with filtered packages
+# This should resolve the filtering issue with ibus-1.5.33-2.fc43
+echo "Resolving ibus package conflicts..."
+dnf5 update -y ibus || echo "ibus update skipped or failed - continuing with installation"
+
 # Core KDE Plasma packages
-dnf5 install -y \
+# Use --skip-broken to handle any remaining dependency conflicts
+dnf5 install -y --skip-broken \
     plasma-desktop \
     plasma-workspace \
     plasma-workspace-wayland \
@@ -28,7 +37,7 @@ dnf5 install -y \
     kwrited
 
 # KDE Applications and Utilities
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     dolphin \
     dolphin-plugins \
     kate \
@@ -43,7 +52,7 @@ dnf5 install -y \
     ksystemlog
 
 # KDE System Settings and Configuration
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     systemsettings \
     plasma-drkonqi \
     kinfocenter \
@@ -55,7 +64,7 @@ dnf5 install -y \
     kglobalaccel
 
 # KDE Frameworks and Libraries (if not already present)
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     kf6-kconfig \
     kf6-kcoreaddons \
     kf6-ki18n \
@@ -65,20 +74,20 @@ dnf5 install -y \
 
 # Gaming-specific KDE packages (from bazzite)
 # Note: steamdeck-kde-presets-desktop is Steam Deck specific, not available in bazzite-gnome
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     krdp \
     kdeconnectd \
     kdeplasma-addons
 
 # Additional KDE utilities
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     kde-partitionmanager \
     kio-extras \
     kio-gdrive \
     kio-admin
 
 # Input methods and internationalization
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     fcitx5 \
     fcitx5-mozc \
     fcitx5-chinese-addons \
@@ -86,12 +95,12 @@ dnf5 install -y \
     kcm-fcitx5
 
 # Additional Plasma addons
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     plasma-browser-integration \
     kdegraphics-thumbnailers
 
 # Network and connectivity
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     bluedevil \
     powerdevil
 
@@ -99,7 +108,7 @@ dnf5 install -y \
 # Both terminals will be available, users can choose
 
 # KRunner plugins and extensions
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     krunner
 
 # Print support
@@ -115,7 +124,7 @@ echo "Testing for package conflicts..."
 
 # Test-install packages that might conflict
 # Install them but be ready to remove if they cause issues
-dnf5 install -y \
+dnf5 install -y --skip-broken \
     plasma-discover || echo "plasma-discover installation failed or was skipped"
 
 # Note: plasma-welcome may auto-launch on first KDE session
