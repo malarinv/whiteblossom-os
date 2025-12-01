@@ -26,7 +26,8 @@ dnf5 install -y \
     sysprof \
     tiptop \
     usbmuxd \
-    zsh
+    zsh \
+    wl-clipboard
 
 # Install ublue-setup-services from COPR (same as bazzite-dx)
 dnf5 install --enable-repo="copr:copr.fedorainfracloud.org:ublue-os:packages" -y \
