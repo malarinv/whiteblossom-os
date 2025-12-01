@@ -3,3 +3,5 @@ _build_*
 output
 _build-*/**
 .cursor/mcp.json
+.env
+bazzite

@@ -90,7 +90,26 @@ echo "✓ Networking Tools installation (if present) complete"
 echo ""
 
 # ============================================================================
-# STEP 4: Configure System Services and Security
+# STEP 4: Install Antigravity IDE
+# ============================================================================
+
+echo "Step 4/4: Installing Antigravity IDE..."
+echo "======================================="
+
+if [ -f "${DESKTOP_DIR}/install-antigravity-ide.sh" ]; then
+    bash "${DESKTOP_DIR}/install-antigravity-ide.sh"
+elif [ -f /ctx/build_files/desktop/install-antigravity-ide.sh ]; then
+    bash /ctx/build_files/desktop/install-antigravity-ide.sh
+else
+    echo "WARNING: install-antigravity-ide.sh not found. Skipping Antigravity IDE installation."
+fi
+
+echo ""
+echo "✓ Antigravity IDE installation (if present) complete"
+echo ""
+
+# ============================================================================
+# STEP 5: Configure System Services and Security
 # ============================================================================
 
 echo "Configuring system services and security..."
@@ -157,6 +176,7 @@ echo "  ✓ KDE Plasma Desktop Environment"
 echo "  ✓ Multi-desktop session support"
 echo "  ✓ Security hardening (SELinux, firewall)"
 echo "  ✓ Privacy-focused networking (Headscale, ZeroTier)"
+echo "  ✓ Antigravity IDE (AI-powered development environment)"
 echo ""
 echo "Next steps:"
 echo "  1. The Containerfile will commit these changes to OSTree"
