@@ -31,7 +31,7 @@ WhiteBlossom OS is a custom bootc-based immutable operating system image built o
 
 ### AI Tooling (Two-Tier Model)
 - **AI IDE apps** (Antigravity, VSCode) - Installed at OS image level via RPM in the build process. These are desktop applications requiring system integration.
-- **AI CLI tools** (Gemini CLI, Claude Code, OpenCode, OpenSpec) - Installed in user space via `ujust setup-ai-tools`. Uses npm/curl with Devbox-provided Node.js. Updates frequently, requires per-user API keys.
+- **AI CLI tools** (Gemini CLI, OpenCode, OpenSpec) - Installed in user space via `ujust setup-ai-tools`. Uses npm/curl with Devbox-provided Node.js. Updates frequently, requires per-user API keys.
 
 ### Infrastructure
 - **GitHub Container Registry (GHCR)** - Container image hosting at `ghcr.io/malarinv/whiteblossom-os`
@@ -249,5 +249,5 @@ WhiteBlossom OS is a custom bootc-based immutable operating system image built o
   - Install: Available in Fedora repos, via cargo, or via Devbox
 
 - **AI CLI Tools** - Installed via `ujust setup-ai-tools`
-  - Gemini CLI, Claude Code, OpenCode, OpenSpec CLI
+  - Gemini CLI, OpenCode, OpenSpec CLI
   - Requires Devbox (for Node.js runtime)

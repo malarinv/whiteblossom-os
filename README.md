@@ -204,7 +204,7 @@ WhiteBlossom OS uses [Devbox](https://www.jetify.com/devbox) (Nix-backed) for de
 # One-command setup: installs Nix, Devbox, and core dev tools
 ujust setup-devbox
 
-# Install AI coding CLI tools (Gemini CLI, Claude Code, OpenCode, OpenSpec)
+# Install AI coding CLI tools (Gemini CLI, OpenCode, OpenSpec)
 ujust setup-ai-tools
 ```
 
@@ -237,7 +237,7 @@ WhiteBlossom OS provides AI tools at two levels:
 | Type | Examples | How Installed | Why |
 |------|----------|---------------|-----|
 | AI IDE apps (desktop) | Antigravity, VSCode | OS image (RPM) | Need desktop integration, icons, file associations |
-| AI CLI tools (terminal) | Gemini CLI, Claude Code, OpenCode, OpenSpec | `ujust setup-ai-tools` | Update frequently, need per-user API keys |
+| AI CLI tools (terminal) | Gemini CLI, OpenCode, OpenSpec | `ujust setup-ai-tools` | Update frequently, need per-user API keys |
 
 ```bash
 # Check what's installed
@@ -248,7 +248,6 @@ ujust setup-ai-tools update
 
 # Install a specific tool
 ujust setup-ai-tools gemini
-ujust setup-ai-tools claude
 ujust setup-ai-tools opencode
 ujust setup-ai-tools openspec
 ```

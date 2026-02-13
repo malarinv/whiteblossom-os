@@ -63,7 +63,11 @@ setup-devbox ACTION="":
             echo "Nix is already installed: $(nix --version)"
         else
             echo "Installing Nix via Determinate Nix Installer..."
-            echo "(This handles immutable OS filesystems automatically)"
+            if [ -d /nix ]; then
+                echo "(/nix directory pre-staged by OS image -- composefs compatible)"
+            else
+                echo "(Creating /nix mount for immutable filesystem)"
+            fi
             echo ""
             curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
             # Source nix for current session
@@ -228,7 +232,7 @@ setup-devbox ACTION="":
         do_uninstall
     fi
 
-# Setup AI coding CLI tools (Gemini CLI, Claude Code, OpenCode)
+# Setup AI coding CLI tools (Gemini CLI, OpenCode, OpenSpec)
 [group("developer")]
 setup-ai-tools ACTION="":
     #!/usr/bin/bash
@@ -257,13 +261,6 @@ setup-ai-tools ACTION="":
         echo "  Setup: Sign in with your Google account on first run."
     }
 
-    install_claude() {
-        echo "Installing Claude Code..."
-        npm install -g @anthropic-ai/claude-code
-        echo "Claude Code installed. Run 'claude' to start."
-        echo "  Setup: Set ANTHROPIC_API_KEY or sign in on first run."
-    }
-
     install_opencode() {
         echo "Installing OpenCode..."
         curl -fsSL https://opencode.sh/install.sh | sh
@@ -285,10 +282,6 @@ setup-ai-tools ACTION="":
             echo "Updating Gemini CLI..."
             npm update -g @google/gemini-cli
         fi
-        if command -v claude &>/dev/null; then
-            echo "Updating Claude Code..."
-            npm update -g @anthropic-ai/claude-code
-        fi
         if command -v opencode &>/dev/null; then
             echo "Updating OpenCode..."
             curl -fsSL https://opencode.sh/install.sh | sh
@@ -309,11 +302,6 @@ setup-ai-tools ACTION="":
             echo "Gemini CLI:  installed ($(which gemini))"
         else
             echo "Gemini CLI:  not installed"
-        fi
-        if command -v claude &>/dev/null; then
-            echo "Claude Code: installed ($(which claude))"
-        else
-            echo "Claude Code: not installed"
         fi
         if command -v opencode &>/dev/null; then
             echo "OpenCode:    installed ($(which opencode))"
@@ -346,7 +334,6 @@ setup-ai-tools ACTION="":
         echo "  <option>: Specify the quick option to skip the prompt"
         echo "  Use 'all' to install all AI CLI tools"
         echo "  Use 'gemini' to install Gemini CLI"
-        echo "  Use 'claude' to install Claude Code"
         echo "  Use 'opencode' to install OpenCode"
         echo "  Use 'openspec' to install OpenSpec CLI"
         echo "  Use 'status' to check which tools are installed"
@@ -366,22 +353,19 @@ setup-ai-tools ACTION="":
             OPTION=$(Choose \
                 "Install All" \
                 "Install Gemini CLI" \
-                "Install Claude Code" \
                 "Install OpenCode" \
                 "Install OpenSpec CLI" \
                 "Check Status" \
                 "Update All" \
             )
         else
-            echo "Options: all, gemini, claude, opencode, openspec, status, update"
+            echo "Options: all, gemini, opencode, openspec, status, update"
             read -rp "Choice: " OPTION
         fi
     fi
 
     if [[ "${OPTION,,}" =~ (^all|^install[[:space:]]all) ]]; then
         install_gemini
-        echo ""
-        install_claude
         echo ""
         install_opencode
         echo ""
@@ -391,8 +375,6 @@ setup-ai-tools ACTION="":
         echo "Note: Each tool requires API keys or sign-in on first use."
     elif [[ "${OPTION,,}" =~ gemini ]]; then
         install_gemini
-    elif [[ "${OPTION,,}" =~ claude ]]; then
-        install_claude
     elif [[ "${OPTION,,}" =~ opencode ]]; then
         install_opencode
     elif [[ "${OPTION,,}" =~ openspec ]]; then
