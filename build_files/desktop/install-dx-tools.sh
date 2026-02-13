@@ -64,5 +64,7 @@ iptable_nat
 EOF
 
 echo "Bazzite DX Developer Tools installation complete!"
-echo "Note: Additional dev tools can be installed via distrobox/toolbox as needed"
+echo "Note: Run 'ujust setup-devbox' for developer tools (Node, Python, uv, etc)."
+echo "      Run 'ujust setup-ai-tools' for AI coding CLI tools (Gemini, Claude, OpenCode)."
+echo "      Distrobox/toolbox also available for distro-specific packages."
 

@@ -194,6 +194,76 @@ ls /usr/share/xsessions/
 ls /usr/share/wayland-sessions/
 ```
 
+# Developer Setup
+
+WhiteBlossom OS uses [Devbox](https://www.jetify.com/devbox) (Nix-backed) for developer tooling instead of distrobox. This provides native paths that AI coding tools understand, no clipboard isolation issues, and per-project version management.
+
+## Quick Start
+
+```bash
+# One-command setup: installs Nix, Devbox, and core dev tools
+ujust setup-devbox
+
+# Install AI coding CLI tools (Gemini CLI, Claude Code, OpenCode, OpenSpec)
+ujust setup-ai-tools
+```
+
+After setup, open a new terminal. You'll have:
+- **Node.js 22** (system default -- replaces nvm)
+- **Python 3.12 + uv** (native -- replaces pip/distrobox)
+- **ripgrep, fd, jq** (search/utility tools)
+- **just, shellcheck, shfmt** (build/lint tools)
+
+## Per-Project Environments
+
+Each project can have its own `devbox.json` with specific tool versions:
+
+```bash
+# Enter the project's dev shell (activates project-specific tools)
+devbox shell
+
+# Or run a single command in the dev shell
+devbox run build
+```
+
+For example, this repo's `devbox.json` provides `gh`, `cosign`, `shellcheck`, `shfmt`, and `just`.
+
+Projects needing different Node.js versions simply specify `nodejs@20` in their `devbox.json` -- no nvm required.
+
+## AI Tooling
+
+WhiteBlossom OS provides AI tools at two levels:
+
+| Type | Examples | How Installed | Why |
+|------|----------|---------------|-----|
+| AI IDE apps (desktop) | Antigravity, VSCode | OS image (RPM) | Need desktop integration, icons, file associations |
+| AI CLI tools (terminal) | Gemini CLI, Claude Code, OpenCode, OpenSpec | `ujust setup-ai-tools` | Update frequently, need per-user API keys |
+
+```bash
+# Check what's installed
+ujust setup-ai-tools status
+
+# Update all AI CLI tools to latest
+ujust setup-ai-tools update
+
+# Install a specific tool
+ujust setup-ai-tools gemini
+ujust setup-ai-tools claude
+ujust setup-ai-tools opencode
+ujust setup-ai-tools openspec
+```
+
+## Devbox vs Distrobox
+
+| Use Case | Tool | Why |
+|----------|------|-----|
+| Language runtimes (Node, Python) | Devbox | Native paths, AI-friendly, no clipboard issues |
+| Package managers (uv, npm) | Devbox | Clean environment, per-project versions |
+| Distro-specific software | Distrobox | Access to apt/pacman/zypper package ecosystems |
+| Testing across distros | Distrobox | Run Arch, Debian, Ubuntu containers |
+
+Distrobox remains available for its strengths. Use `ujust setup-devbox status` to check your Devbox environment.
+
 # Development
 
 ## Building Custom Images
