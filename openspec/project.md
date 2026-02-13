@@ -23,11 +23,15 @@ WhiteBlossom OS is a custom bootc-based immutable operating system image built o
 ### Build & Development Tools
 - **Just** - Command runner for build automation (modern Make alternative)
 - **bootc-image-builder (BIB)** - Creates bootable images (QCOW2, RAW, ISO) from container images
-- **Devbox** - Reproducible development environment manager
+- **Devbox** - Primary developer tool manager (Nix-backed). Provides native-path packages for both global (`devbox global`) and per-project (`devbox.json`) use. Replaces distrobox for dev tooling (Node.js, Python, uv, etc). Setup via `ujust setup-devbox`.
 - **cosign** - Container image signing for supply chain security
 - **GitHub Actions** - CI/CD for automated builds and releases
 - **shellcheck** - Bash script linting
 - **shfmt** - Bash script formatting
+
+### AI Tooling (Two-Tier Model)
+- **AI IDE apps** (Antigravity, VSCode) - Installed at OS image level via RPM in the build process. These are desktop applications requiring system integration.
+- **AI CLI tools** (Gemini CLI, OpenCode, OpenSpec) - Installed in user space via `ujust setup-ai-tools`. Uses npm/curl with Devbox-provided Node.js. Updates frequently, requires per-user API keys.
 
 ### Infrastructure
 - **GitHub Container Registry (GHCR)** - Container image hosting at `ghcr.io/malarinv/whiteblossom-os`
@@ -234,10 +238,16 @@ WhiteBlossom OS is a custom bootc-based immutable operating system image built o
   - Must be enabled/disabled explicitly in build scripts
 
 ### Development Tools
-- **Devbox** - Development environment
-  - Packages: `gh` (GitHub CLI), `cosign` (signing tool)
-  - Schema: https://raw.githubusercontent.com/jetify-com/devbox/0.13.7/.schema/devbox.schema.json
+- **Devbox** - Primary developer tool manager (Nix-backed)
+  - Project packages: `gh`, `cosign`, `shellcheck`, `shfmt`, `just`
+  - Global packages (via `ujust setup-devbox`): `nodejs@22`, `python@3.12`, `uv`, `ripgrep`, `fd`, `jq`, `just`, `shellcheck`, `shfmt`
+  - Schema: https://raw.githubusercontent.com/jetify-com/devbox/latest/.schema/devbox.schema.json
+  - Replaces distrobox for developer tooling (native paths, no clipboard issues, AI-friendly)
 
 - **Just** - Command runner
   - Used for: All build, test, and utility commands
-  - Install: Available in Fedora repos or via cargo
+  - Install: Available in Fedora repos, via cargo, or via Devbox
+
+- **AI CLI Tools** - Installed via `ujust setup-ai-tools`
+  - Gemini CLI, OpenCode, OpenSpec CLI
+  - Requires Devbox (for Node.js runtime)

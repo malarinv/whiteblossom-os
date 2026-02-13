@@ -24,6 +24,11 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build_files/build.sh
 
+# Ensure /nix directory exists for Determinate Nix Installer at runtime
+# nix-filesystem RPM creates this with correct SELinux contexts, but
+# belt-and-suspenders: create it if the RPM is unavailable on this Fedora version
+RUN mkdir -p /nix
+
 # Copy system configuration files
 # Order matters: shared -> gnome -> kde (later files override earlier ones)
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \

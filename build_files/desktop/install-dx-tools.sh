@@ -27,7 +27,8 @@ dnf5 install -y \
     tiptop \
     usbmuxd \
     zsh \
-    wl-clipboard
+    wl-clipboard \
+    nix-filesystem
 
 # Install ublue-setup-services from COPR (same as bazzite-dx)
 dnf5 install --enable-repo="copr:copr.fedorainfracloud.org:ublue-os:packages" -y \
@@ -64,5 +65,7 @@ iptable_nat
 EOF
 
 echo "Bazzite DX Developer Tools installation complete!"
-echo "Note: Additional dev tools can be installed via distrobox/toolbox as needed"
+echo "Note: Run 'ujust setup-devbox' for developer tools (Node, Python, uv, etc)."
+echo "      Run 'ujust setup-ai-tools' for AI coding CLI tools (Gemini, OpenCode, OpenSpec)."
+echo "      Distrobox/toolbox also available for distro-specific packages."
 
