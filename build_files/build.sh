@@ -149,6 +149,23 @@ for dir in "/ctx/system_files/shared" "/ctx/system_files/kde" "/ctx/system_files
 done
 
 # ============================================================================
+# JUSTFILE REGISTRATION
+# ============================================================================
+
+echo "Registering custom justfiles..."
+# Append any justfiles in /usr/share/ublue-os/just/ that aren't imported yet
+# This ensures that files added by WhiteBlossom are available via ujust
+for file in /usr/share/ublue-os/just/*.just; do
+    if [ -f "$file" ]; then
+        filename=$(basename "$file")
+        if ! grep -q "$filename" /usr/share/ublue-os/justfile; then
+            echo "Importing $file into main justfile"
+            echo "import \"$file\"" >> /usr/share/ublue-os/justfile
+        fi
+    fi
+done
+
+# ============================================================================
 # CLEANUP
 # ============================================================================
 
