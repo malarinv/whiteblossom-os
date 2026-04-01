@@ -17,17 +17,17 @@ systemctl stop tailscaled.service || true
 
 # Add Headscale COPR repository
 echo "Adding Headscale COPR repository..."
-dnf5 copr enable -y jonathanspw/headscale
+if dnf5 copr enable -y jonathanspw/headscale; then
 
-# Install Headscale
-echo "Installing Headscale (self-hosted Tailscale control server)..."
-dnf5 install -y headscale
+  # Install Headscale
+  echo "Installing Headscale (self-hosted Tailscale control server)..."
+  dnf5 install -y headscale
 
-# Create Headscale configuration directory
-mkdir -p /etc/headscale
+  # Create Headscale configuration directory
+  mkdir -p /etc/headscale
 
-# Add example Headscale configuration
-cat > /etc/headscale/config.yaml << 'EOF'
+  # Add example Headscale configuration
+  cat > /etc/headscale/config.yaml << 'EOF'
 # Headscale Configuration Example
 # Edit this file to configure your self-hosted Tailscale control server
 # Documentation: https://github.com/juanfont/headscale
@@ -78,26 +78,29 @@ dns_config:
 # Logging
 log_level: info
 
-# Disable by default, users will enable when ready to use
+  # Disable by default, users will enable when ready to use
 EOF
 
-# Set proper permissions on Headscale config
-chmod 644 /etc/headscale/config.yaml
+  # Set proper permissions on Headscale config
+  chmod 644 /etc/headscale/config.yaml
 
-# Create Headscale data directory
-mkdir -p /var/lib/headscale
+  # Create Headscale data directory
+  mkdir -p /var/lib/headscale
 
-# Disable Headscale service by default (user will enable when ready)
-systemctl disable headscale.service || true
+  # Disable Headscale service by default (user will enable when ready)
+  systemctl disable headscale.service || true
 
-echo "Headscale installed and configured. Service is disabled by default."
-echo "To use Headscale, users should:"
-echo "  1. Edit /etc/headscale/config.yaml with their settings"
-echo "  2. Run: sudo systemctl enable --now headscale.service"
-echo "  3. Configure Tailscale clients to use their Headscale server"
+  echo "Headscale installed and configured. Service is disabled by default."
+  echo "To use Headscale, users should:"
+  echo "  1. Edit /etc/headscale/config.yaml with their settings"
+  echo "  2. Run: sudo systemctl enable --now headscale.service"
+  echo "  3. Configure Tailscale clients to use their Headscale server"
 
-# Disable Headscale COPR to avoid it being enabled in final image
-dnf5 copr disable -y jonathanspw/headscale
+  # Disable Headscale COPR to avoid it being enabled in final image
+  dnf5 copr disable -y jonathanspw/headscale
+else
+  echo "Headscale COPR repo not available for this Fedora version; skipping Headscale install."
+fi
 
 # Install ZeroTier-One from RPMFusion Non-Free
 # Reference: https://rpmfind.net/linux/rpm2html/search.php?query=zerotier-one
@@ -168,4 +171,3 @@ EOF
 
 echo "Networking tools configuration complete!"
 echo "Documentation available at: /usr/share/doc/whiteblossom-os/mesh-vpn-guide.md"
-
