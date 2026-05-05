@@ -7,6 +7,18 @@ set -eoux pipefail
 
 echo "Configuring privacy-focused networking tools..."
 
+# Add RPM Fusion repositories (required for ZeroTier and other non-free packages)
+echo "Adding RPM Fusion repositories..."
+FEDORA_VERSION=$(rpm -E %fedora)
+if ! rpm -q rpmfusion-nonfree-release &>/dev/null; then
+    dnf5 install -y \
+        "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
+        "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm" || \
+        echo "Warning: Could not add RPM Fusion repositories"
+else
+    echo "RPM Fusion repositories already present"
+fi
+
 # Remove Tailscale (present in Bazzite base)
 echo "Removing Tailscale in favor of self-hosted alternatives..."
 dnf5 remove -y tailscale || echo "Tailscale not installed, skipping removal"
@@ -15,13 +27,9 @@ dnf5 remove -y tailscale || echo "Tailscale not installed, skipping removal"
 systemctl disable tailscaled.service || true
 systemctl stop tailscaled.service || true
 
-# Add Headscale COPR repository
-echo "Adding Headscale COPR repository..."
-if dnf5 copr enable -y jonathanspw/headscale; then
-
-  # Install Headscale
-  echo "Installing Headscale (self-hosted Tailscale control server)..."
-  dnf5 install -y headscale
+# Install Headscale from official Fedora repositories
+echo "Installing Headscale (self-hosted Tailscale control server)..."
+if dnf5 install -y headscale; then
 
   # Create Headscale configuration directory
   mkdir -p /etc/headscale
@@ -95,25 +103,24 @@ EOF
   echo "  1. Edit /etc/headscale/config.yaml with their settings"
   echo "  2. Run: sudo systemctl enable --now headscale.service"
   echo "  3. Configure Tailscale clients to use their Headscale server"
-
-  # Disable Headscale COPR to avoid it being enabled in final image
-  dnf5 copr disable -y jonathanspw/headscale
 else
-  echo "Headscale COPR repo not available for this Fedora version; skipping Headscale install."
+  echo "Headscale not available in repositories; skipping Headscale install."
 fi
 
 # Install ZeroTier-One from RPMFusion Non-Free
-# Reference: https://rpmfind.net/linux/rpm2html/search.php?query=zerotier-one
 echo "Installing ZeroTier-One from RPMFusion Non-Free..."
-dnf5 install -y --enablerepo=rpmfusion-nonfree zerotier-one
+if dnf5 install -y --enablerepo=rpmfusion-nonfree zerotier-one; then
 
-# Disable ZeroTier service by default (user will enable when ready)
-systemctl disable zerotier-one.service || true
+  # Disable ZeroTier service by default (user will enable when ready)
+  systemctl disable zerotier-one.service || true
 
-echo "ZeroTier-One installed. Service is disabled by default."
-echo "To use ZeroTier, users should:"
-echo "  1. Run: sudo systemctl enable --now zerotier-one.service"
-echo "  2. Join a network: sudo zerotier-cli join <network-id>"
+  echo "ZeroTier-One installed. Service is disabled by default."
+  echo "To use ZeroTier, users should:"
+  echo "  1. Run: sudo systemctl enable --now zerotier-one.service"
+  echo "  2. Join a network: sudo zerotier-cli join <network-id>"
+else
+  echo "ZeroTier-One not available; skipping ZeroTier install."
+fi
 
 # Add documentation file
 mkdir -p /usr/share/doc/whiteblossom-os
