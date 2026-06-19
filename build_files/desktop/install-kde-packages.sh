@@ -102,7 +102,8 @@ dnf5 install -y --skip-broken \
 # Network and connectivity
 dnf5 install -y --skip-broken \
     bluedevil \
-    powerdevil
+    powerdevil \
+    plasma-nm-openvpn
 
 # Terminal emulator (Ptyxis is already in base, keep Konsole as option)
 # Both terminals will be available, users can choose
