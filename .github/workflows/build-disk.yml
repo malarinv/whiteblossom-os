@@ -172,7 +172,7 @@ jobs:
             -v ./output:/output \
             ghcr.io/osbuild/image-builder-cli:latest \
             build \
-            --output /output \
+            --output-dir /output \
             --bootc-default-fs btrfs \
             --bootc-ref localhost/whiteblossom-iso:latest \
             bootc-generic-iso
