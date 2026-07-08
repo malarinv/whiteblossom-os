@@ -1,3 +1,7 @@
+# NOTE: anaconda-iso is currently disabled in build-disk.yml due to an upstream
+# GPG key bug in bootc-image-builder (https://github.com/osbuild/bootc-image-builder/issues/1188).
+# This config is retained for when anaconda-iso support is re-enabled.
+
 [customizations.installer.kickstart]
 contents = """
 %post

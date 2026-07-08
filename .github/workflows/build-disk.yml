@@ -39,7 +39,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        disk-type: ["qcow2", "anaconda-iso"]
+        # anaconda-iso disabled: blocked by upstream GPG key bug
+        # https://github.com/osbuild/bootc-image-builder/issues/1188
+        # The terra-mesa repo in bazzite uses gpgkey=file:// which BIB's
+        # depsolver cannot resolve. Re-enable when upstream fixes this,
+        # or migrate to bootc-generic-iso type (requires Containerfile changes).
+        disk-type: ["qcow2"]
     permissions:
       contents: read
       packages: read
