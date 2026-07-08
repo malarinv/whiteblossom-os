@@ -1,0 +1,71 @@
+# ISO-specific overlay on top of the main WhiteBlossom OS image.
+# This is used by build-disk.yml to produce bootc-generic-iso artifacts.
+# It adds Anaconda and the build tools required by image-builder-cli,
+# without polluting the primary container image.
+#
+# Upstream docs: https://github.com/osbuild/image-builder/blob/main/doc/20-advanced/20-bootc/10-isos.md
+
+ARG BASE_IMAGE=ghcr.io/malarinv/whiteblossom-os:latest
+FROM ${BASE_IMAGE}
+
+# --- Anaconda installer packages ---
+RUN dnf install -qy \
+    anaconda \
+    anaconda-install-img-deps \
+    anaconda-dracut \
+    dracut-config-generic \
+    dracut-network \
+    net-tools \
+    grub2-efi-x64-cdboot \
+    plymouth \
+    default-fonts-core-sans \
+    default-fonts-other-sans \
+    google-noto-sans-cjk-fonts \
+    && dnf clean all
+
+# --- Build tools required by image-builder-cli ---
+RUN dnf install -qy \
+    xorrisofs \
+    squashfs-tools \
+    && dnf clean all
+
+# --- EFI directory layout ---
+RUN mkdir -p /boot/efi && cp -ra /usr/lib/efi/*/*/EFI /boot/efi
+
+# --- ISO configuration ---
+RUN mkdir -p /usr/lib/image-builder/bootc
+
+COPY iso_config/iso.yaml /usr/lib/image-builder/bootc/iso.yaml
+
+# --- Anaconda kickstart defaults ---
+COPY iso_config/interactive-defaults.ks /usr/share/anaconda/interactive-defaults.ks
+
+# --- Anaconda system setup (required by lorax/bootc contract) ---
+RUN echo "install:x:0:0:root:/root:/usr/libexec/anaconda/run-anaconda" >> /etc/passwd && \
+    echo "install::14438:0:99999:7:::" >> /etc/shadow && \
+    passwd -d root
+
+RUN mv /usr/share/anaconda/list-harddrives-stub /usr/bin/list-harddrives && \
+    mv /etc/yum.repos.d /etc/anaconda.repos.d && \
+    ln -s /lib/systemd/system/anaconda.target /etc/systemd/system/default.target && \
+    rm -v /usr/lib/systemd/system-generators/systemd-gpt-auto-generator || true
+
+RUN ln -s /usr/lib/systemd/system/anaconda-shell@.service /usr/lib/systemd/system/autovt@.service
+
+RUN mkdir -p /usr/lib/systemd/logind.conf.d
+COPY iso_config/anaconda-shell.conf /usr/lib/systemd/logind.conf.d/anaconda-shell.conf
+
+# --- Rebuild initramfs with anaconda module ---
+RUN mkdir -p "$(realpath /root)" && \
+    kernel=$(kernel-install list --json pretty | jq -r '.[] | select(.has_kernel == true) | .version') && \
+    DRACUT_NO_XATTR=1 dracut --force -v --zstd --reproducible --no-hostonly \
+        --add "anaconda" \
+        "/usr/lib/modules/${kernel}/initramfs.img" "${kernel}"
+
+# --- Allow root pipewire (for anaconda GUI) ---
+RUN mkdir -p /etc/systemd/user/pipewire.service.d/ && \
+    printf '[Unit]\nConditionUser=\n' > /etc/systemd/user/pipewire.service.d/allowroot.conf
+RUN mkdir -p /etc/systemd/user/pipewire.socket.d/ && \
+    printf '[Unit]\nConditionUser=\n' > /etc/systemd/user/pipewire.socket.d/allowroot.conf
+
+RUN ostree container commit
