@@ -111,6 +111,7 @@ jobs:
   build-iso:
     name: Build ISO
     runs-on: ${{ inputs.platform == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    needs: build-qcow2
     permissions:
       contents: read
       packages: read
