@@ -85,8 +85,8 @@ sudoif command *args:
 # This will build an image 'aurora:lts' with DX and GDX enabled.
 #
 
-# Build the image using the specified parameters
-build $target_image=image_name $tag=default_tag:
+# Build a specific variant (workstation, iot, cloud, handheld)
+build variant="workstation" $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
     BUILD_ARGS=()
@@ -97,6 +97,7 @@ build $target_image=image_name $tag=default_tag:
     podman build \
         "${BUILD_ARGS[@]}" \
         --pull=newer \
+        --target "${variant}" \
         --tag "${target_image}:${tag}" \
         .
 
@@ -195,31 +196,31 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
 #   config: The configuration file to use for the build (deafult: disk_config/disk.toml)
 
 # Example: just _rebuild-bib localhost/fedora latest qcow2 disk_config/disk.toml
-_rebuild-bib $target_image $tag $type $config: (build target_image tag) && (_build-bib target_image tag type config)
+_rebuild-bib $target_image $tag $type $config $variant="workstation": (build variant target_image tag) && (_build-bib target_image tag type config)
 
-# Build a QCOW2 virtual machine image
+# Build QCOW2 for a specific variant
 [group('Build Virtal Machine Image')]
-build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "qcow2" "disk_config/disk.toml")
+build-qcow2 variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "qcow2" "disk_config/{{variant}}.toml")
 
-# Build a RAW virtual machine image
+# Build RAW for a specific variant
 [group('Build Virtal Machine Image')]
-build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/disk.toml")
+build-raw variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/{{variant}}.toml")
 
-# Build an ISO virtual machine image
+# Build ISO for a specific variant
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "iso" "disk_config/iso.toml")
+build-iso variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "iso" "disk_config/iso.toml")
 
-# Rebuild a QCOW2 virtual machine image
+# Rebuild QCOW2 for a specific variant
 [group('Build Virtal Machine Image')]
-rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "disk_config/disk.toml")
+rebuild-qcow2 variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "disk_config/{{variant}}.toml" variant)
 
-# Rebuild a RAW virtual machine image
+# Rebuild RAW for a specific variant
 [group('Build Virtal Machine Image')]
-rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "raw" "disk_config/disk.toml")
+rebuild-raw variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "raw" "disk_config/{{variant}}.toml" variant)
 
-# Rebuild an ISO virtual machine image
+# Rebuild ISO for a specific variant
 [group('Build Virtal Machine Image')]
-rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "iso" "disk_config/iso.toml")
+rebuild-iso variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "iso" "disk_config/iso.toml" variant)
 
 # Run a virtual machine with the specified image type and configuration
 _run-vm $target_image $tag $type $config:

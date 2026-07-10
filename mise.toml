@@ -1,9 +1,35 @@
 [tools]
 "github:SurgeDM/Surge" = "latest"
 
-[tasks.iso]
-description = "Launch the whiteblossom OS ISO in QEMU with graphical installer"
+# ── Workstation tasks ──────────────────────────────────────────────────
+[tasks.iso-workstation]
+description = "Launch workstation ISO in QEMU with graphical installer"
 run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio -cdrom dist/bootc-bazzite-44-bootc-generic-iso-x86_64.iso -boot d"
-[tasks.boot]
-description = "Boot installed WhiteBlossom OS from disk (post-installation)"
+
+[tasks.boot-workstation]
+description = "Boot installed workstation from disk (post-installation)"
 run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio"
+
+# ── IoT tasks ──────────────────────────────────────────────────────────
+[tasks.boot-iot]
+description = "Boot IoT image in QEMU (headless, serial console)"
+run = "qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 -display none -serial mon:stdio -drive file=dist/iot.raw,format=raw,if=virtio"
+
+# ── Cloud tasks ──────────────────────────────────────────────────────
+[tasks.boot-cloud]
+description = "Boot cloud node in QEMU (headless)"
+run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -display none -serial mon:stdio -drive file=dist/cloud.qcow2,format=qcow2,if=virtio"
+
+# ── Handheld tasks ─────────────────────────────────────────────────────
+[tasks.boot-handheld]
+description = "Boot handheld image in QEMU"
+run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/handheld.qcow2,format=qcow2,if=virtio"
+
+# ── Legacy aliases ─────────────────────────────────────────────────────
+[tasks.iso]
+description = "Alias for iso-workstation (deprecated)"
+run = "mise run iso-workstation"
+
+[tasks.boot]
+description = "Alias for boot-workstation (deprecated)"
+run = "mise run boot-workstation"

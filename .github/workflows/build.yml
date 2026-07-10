@@ -12,21 +12,42 @@ on:
     paths-ignore:
       - "**/README.md"
   workflow_dispatch:
+    inputs:
+      variant:
+        description: "Variant to build (empty = all variants)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - workstation
+          - iot
+          - cloud
+          - handheld
 
 env:
-  IMAGE_NAME: "${{ github.event.repository.name }}" # the name of the image produced by this build, matches repo names
-  IMAGE_DESC: "My Customized Universal Blue Image"
-  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}" # do not edit
-  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4" # You should put your own image here so that you get a fancy profile image on https://artifacthub.io/!
+  IMAGE_NAME: "${{ github.event.repository.name }}"
+  IMAGE_DESC: "WhiteBlossom OS — Multi-variant desktop and embedded Linux"
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ github.event.inputs.variant || 'all' }}
   cancel-in-progress: true
 
 jobs:
   build_push:
-    name: Build and push image
-    runs-on: ubuntu-24.04
+    name: Build ${{ matrix.variant }}
+    runs-on: ${{ matrix.runner || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(github.event.inputs.variant && format('["{0}"]', github.event.inputs.variant) || '["workstation"]') }}
+        # Add more variants to the array above when ready to build them in CI.
+        # Example: ["workstation", "iot", "cloud", "handheld"]
+        # For now, only workstation is built by default.
+        include:
+          - variant: iot
+            runner: ubuntu-24.04-arm
 
     permissions:
       contents: read
@@ -34,12 +55,9 @@ jobs:
       id-token: write
 
     steps:
-      # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
 
-      # Free up disk space by removing pre-installed software we don't need
-      # Reference: https://carlosbecker.com/posts/github-actions-disk-space/
       - name: Free Disk Space
         run: |
           echo "=== Before cleanup ==="
@@ -55,20 +73,13 @@ jobs:
       - name: Get current date
         id: date
         run: |
-          # This generates a timestamp like what is defined on the ArtifactHub documentation
-          # E.G: 2022-02-08T15:38:15Z'
-          # https://artifacthub.io/docs/topics/repositories/container-images/
-          # https://linux.die.net/man/1/date
           echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
 
-      # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
-      # The metadata by itself is not going to do anything, you choose if you want your image to be on ArtifactHub or not.
       - name: Image Metadata
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         id: metadata
         with:
-          # This generates all the tags for your image, you can add custom tags here too!
-          # By default, it should generate "latest" and "latest.(date here)".
+          images: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.variant }}
           tags: |
             type=raw,value=latest
             type=raw,value=latest.{{date 'YYYYMMDD'}}
@@ -78,19 +89,20 @@ jobs:
           labels: |
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
-            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
+            org.opencontainers.image.description=${{ env.IMAGE_DESC }} (${{ matrix.variant }})
             org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/refs/heads/main/README.md
             org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/main/Containerfile
-            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}-${{ matrix.variant }}
             org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=latest
             io.artifacthub.package.deprecated=false
-            io.artifacthub.package.keywords=bootc,ublue,universal-blue
+            io.artifacthub.package.keywords=bootc,ublue,universal-blue,${{ matrix.variant }}
             io.artifacthub.package.license=Apache-2.0
             io.artifacthub.package.logo-url=${{ env.ARTIFACTHUB_LOGO_URL }}
             io.artifacthub.package.prerelease=false
             containers.bootc=1
+            variant=${{ matrix.variant }}
           sep-tags: " "
           sep-annotations: " "
 
@@ -100,39 +112,15 @@ jobs:
         with:
           containerfiles: |
             ./Containerfile
-          # Postfix image name with -custom to make it a little more descriptive
-          # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
-          image: ${{ env.IMAGE_NAME }}
+          image: ${{ env.IMAGE_NAME }}-${{ matrix.variant }}
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            TARGET=${{ matrix.variant }}
+          extra-args: |
+            --target ${{ matrix.variant }}
           oci: false
 
-      # Rechunk is a script that we use on Universal Blue to make sure there isnt a single huge layer when your image gets published.
-      # This does not make your image faster to download, just provides better resumability and fixes a few errors.
-      # Documentation for Rechunk is provided on their github repository at https://github.com/hhd-dev/rechunk
-      # You can enable it by uncommenting the following lines:
-      # - name: Run Rechunker
-      #   id: rechunk
-      #   uses: hhd-dev/rechunk@f153348d8100c1f504dec435460a0d7baf11a9d2 # v1.1.1
-      #   with:
-      #     rechunk: 'ghcr.io/hhd-dev/rechunk:v1.0.1'
-      #     ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-      #     prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-      #     skip_compression: true
-      #     version: ${{ env.CENTOS_VERSION }}
-      #     labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator
-
-      # This is necessary so that the podman socket can find the rechunked image on its storage
-      # - name: Load in podman and tag
-      #   run: |
-      #     IMAGE=$(podman pull ${{ steps.rechunk.outputs.ref }})
-      #     sudo rm -rf ${{ steps.rechunk.outputs.output }}
-      #     for tag in ${{ steps.metadata.outputs.tags }}; do
-      #       podman tag $IMAGE ${{ env.IMAGE_NAME }}:$tag
-      #     done
-
-      # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
-      # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work
       - name: Login to GitHub Container Registry
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
@@ -141,8 +129,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Workaround bug where capital letters in your GitHub username make it impossible to push to GHCR.
-      # https://github.com/macbre/push-to-ghcr/issues/12
       - name: Lowercase Registry
         id: registry_case
         uses: ASzc/change-string-case-action@ecd1412d078f2e06e9eedcbaa6fcd988151c3f82 # v8
@@ -153,7 +139,7 @@ jobs:
         id: image_case
         uses: ASzc/change-string-case-action@ecd1412d078f2e06e9eedcbaa6fcd988151c3f82 # v8
         with:
-          string: ${{ env.IMAGE_NAME }}
+          string: ${{ env.IMAGE_NAME }}-${{ matrix.variant }}
 
       - name: Push To GHCR
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
@@ -169,10 +155,6 @@ jobs:
           username: ${{ env.REGISTRY_USER }}
           password: ${{ env.REGISTRY_PASSWORD }}
 
-      # This section is optional and only needs to be enabled if you plan on distributing
-      # your project for others to consume. You will need to create a public and private key
-      # using Cosign and save the private key as a repository secret in Github for this workflow
-      # to consume. For more details, review the image signing section of the README.
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)

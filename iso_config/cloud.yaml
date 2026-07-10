@@ -1,0 +1,6 @@
+label: "WhiteBlossom-Cloud"
+grub2:
+  entries:
+    - name: "WhiteBlossom OS Cloud Node (Headless)"
+      linux: "/images/pxeboot/vmlinuz console=tty0 selinux=0 quiet"
+      initrd: "/images/pxeboot/initrd.img"

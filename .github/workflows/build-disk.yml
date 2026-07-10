@@ -15,11 +15,21 @@ on:
         options:
           - amd64
           - arm64
+      variant:
+        description: "Variant to build (empty = workstation only)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - workstation
+          - iot
+          - cloud
+          - handheld
   pull_request:
     branches:
       - main
     paths:
-      - './disk_config/disk.toml'
+      - './disk_config/*.toml'
       - './Containerfile.iso'
       - './iso_config/**'
       - './.github/workflows/build-disk.yml'
@@ -30,14 +40,21 @@ env:
   DEFAULT_TAG: "latest"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ github.event.inputs.variant || 'workstation' }}
   cancel-in-progress: true
 
 jobs:
   # ── QCOW2 ──────────────────────────────────────────────────────────────
   build-qcow2:
-    name: Build qcow2
+    name: Build qcow2 (${{ matrix.variant }})
     runs-on: ${{ inputs.platform == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(github.event.inputs.variant && format('["{0}"]', github.event.inputs.variant) || '["workstation"]') }}
+        include:
+          - variant: iot
+            runner: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: read
@@ -50,6 +67,7 @@ jobs:
           USER_GID=$(id -g)
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          echo "IMAGE_VARIANT=${{ matrix.variant }}" >> ${GITHUB_ENV}
           echo "USER_UID=${USER_UID}" >> ${GITHUB_ENV}
           echo "USER_GID=${USER_GID}" >> ${GITHUB_ENV}
 
@@ -74,8 +92,8 @@ jobs:
         id: build
         uses: osbuild/bootc-image-builder-action@main
         with:
-          config-file: ./disk_config/disk.toml
-          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
+          config-file: ./disk_config/${{ matrix.variant }}.toml
+          image: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.variant }}:${{ env.DEFAULT_TAG }}
           chown: ${{ env.USER_UID }}:${{ env.USER_GID }}
           types: qcow2
           additional-args: --use-librepo=True
@@ -109,9 +127,16 @@ jobs:
 
   # ── ISO (anaconda-iso via image-builder-cli) ─────────────────────────
   build-iso:
-    name: Build ISO
+    name: Build ISO (${{ matrix.variant }})
     runs-on: ${{ inputs.platform == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     needs: build-qcow2
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(github.event.inputs.variant && format('["{0}"]', github.event.inputs.variant) || '["workstation"]') }}
+        include:
+          - variant: iot
+            runner: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: read
@@ -124,6 +149,7 @@ jobs:
           USER_GID=$(id -g)
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          echo "IMAGE_VARIANT=${{ matrix.variant }}" >> ${GITHUB_ENV}
           echo "USER_UID=${USER_UID}" >> ${GITHUB_ENV}
           echo "USER_GID=${USER_GID}" >> ${GITHUB_ENV}
 
@@ -155,12 +181,12 @@ jobs:
 
       - name: Pull base image
         run: |
-          sudo podman pull "$IMAGE_REGISTRY/$IMAGE_NAME:$DEFAULT_TAG"
+          sudo podman pull "$IMAGE_REGISTRY/$IMAGE_NAME-$IMAGE_VARIANT:$DEFAULT_TAG"
 
       - name: Build ISO overlay image
         run: |
           sudo podman build \
-            --build-arg BASE_IMAGE="$IMAGE_REGISTRY/$IMAGE_NAME:$DEFAULT_TAG" \
+            --build-arg BASE_IMAGE="$IMAGE_REGISTRY/$IMAGE_NAME-$IMAGE_VARIANT:$DEFAULT_TAG" \
             -t localhost/whiteblossom-iso:latest \
             -f Containerfile.iso .
 
