@@ -50,21 +50,59 @@ description = "Build handheld QCOW2 disk image"
 run = "just build-qcow2 handheld localhost/whiteblossom-handheld latest"
 
 # ===============================
-# Run (QEMU)
+# Run (QEMU) — requires disk to be built first
 # ===============================
 
 [tasks."run:workstation"]
-description = "Build and run workstation in QEMU (graphical, GPU)"
-run = "just build-qcow2 workstation localhost/whiteblossom-os latest && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+description = "Run workstation in QEMU (graphical, GPU)"
+run = '''
+if [ ! -f output/qcow2/disk.qcow2 ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:workstation"
+  exit 1
+fi
+qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 \
+  -device virtio-vga-gl,blob=on,hostmem=4G,venus=true \
+  -display gtk,gl=on \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
+'''
 
 [tasks."run:iot"]
-description = "Build and run IoT in QEMU (ARM, headless)"
-run = "just build-raw iot localhost/whiteblossom-iot latest && qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 -display none -serial mon:stdio -drive file=output/raw/disk.raw,format=raw,if=virtio"
+description = "Run IoT in QEMU (ARM, headless)"
+run = '''
+if [ ! -f output/raw/disk.raw ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:iot"
+  exit 1
+fi
+qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 \
+  -display none -serial mon:stdio \
+  -drive file=output/raw/disk.raw,format=raw,if=virtio
+'''
 
 [tasks."run:cloud"]
-description = "Build and run cloud in QEMU (headless, serial console)"
-run = "just build-qcow2 cloud localhost/whiteblossom-cloud latest && qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 -nographic -serial mon:stdio -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+description = "Run cloud in QEMU (headless, serial console)"
+run = '''
+if [ ! -f output/qcow2/disk.qcow2 ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:cloud"
+  exit 1
+fi
+qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 \
+  -nographic -serial mon:stdio \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
+'''
 
 [tasks."run:handheld"]
-description = "Build and run handheld in QEMU (graphical)"
-run = "just build-qcow2 handheld localhost/whiteblossom-handheld latest && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+description = "Run handheld in QEMU (graphical)"
+run = '''
+if [ ! -f output/qcow2/disk.qcow2 ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:handheld"
+  exit 1
+fi
+qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 \
+  -device virtio-vga-gl,blob=on,hostmem=4G,venus=true \
+  -display gtk,gl=on \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
+'''
