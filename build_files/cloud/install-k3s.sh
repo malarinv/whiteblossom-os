@@ -43,6 +43,7 @@ K3S_VERSION="${K3S_VERSION:-v1.35.5+k3s1}"
 curl -sfL https://get.k3s.io | \
     INSTALL_K3S_SKIP_ENABLE=true \
     INSTALL_K3S_SKIP_START=true \
+    INSTALL_K3S_SELINUX_WARN=true \
     INSTALL_K3S_VERSION="${K3S_VERSION}" \
     sh -
 # Verify installation
