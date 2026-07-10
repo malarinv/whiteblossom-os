@@ -15,19 +15,19 @@
 
 [tasks."build:workstation"]
 description = "Build workstation container image"
-run = "just build workstation"
+run = "just build workstation localhost/whiteblossom-os latest"
 
 [tasks."build:iot"]
 description = "Build IoT container image"
-run = "just build iot"
+run = "just build iot localhost/whiteblossom-iot latest"
 
 [tasks."build:cloud"]
 description = "Build cloud container image"
-run = "just build cloud"
+run = "just build cloud localhost/whiteblossom-cloud latest"
 
 [tasks."build:handheld"]
 description = "Build handheld container image"
-run = "just build handheld"
+run = "just build handheld localhost/whiteblossom-handheld latest"
 
 # ===============================
 # Disk (QCOW2 / RAW conversion)
