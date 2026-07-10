@@ -57,6 +57,10 @@ Several issues surfaced during implementation:
 | Wrong CLI flag | `error: unknown flag: --output` | `image-builder-cli` uses `--output-dir`, not `--output` |
 | Disk exhaustion | Both jobs ran out of space on the same runner | Make ISO job depend on qcow2 (`needs: build-qcow2`) |
 
+### Phase 5: Installation hangs at image download
+
+After the CI builds succeeded, manual testing revealed the ISO boots to Anaconda but the installation stalls when trying to pull the container image from a registry. This is because **`bootc-generic-iso` does NOT embed the image** — it's a generic installer that requires network access.
+
 ## Architecture Decisions
 
 ### Why `image-builder-cli` instead of `bootc-image-builder`?
@@ -70,7 +74,7 @@ Key differences:
 | | `bootc-image-builder` (BIB) | `image-builder-cli` |
 |---|---|---|
 | GitHub Action | `osbuild/bootc-image-builder-action` | None (run container directly) |
-| ISO type for self-contained | `anaconda-iso` | `anaconda-iso` (or `bootc-generic-iso`) |
+| Self-contained ISO type | `anaconda-iso` (embeds image) | `bootc-generic-iso` (requires network) |
 | GPG key handling | Broken for `file://` paths | Supports `--force-repo` override |
 | `--output` flag | Yes | No, use `--output-dir` |
 
@@ -90,13 +94,38 @@ GitHub-hosted runners have ~14GB free disk space. The qcow2 build (BIB container
 
 ### Why `bootc-generic-iso` instead of `anaconda-iso`?
 
-The `image-builder-cli` docs state that `anaconda-iso` is the legacy type from BIB and is being replaced. The `bootc-generic-iso` type:
+We don't have a choice — `bootc-generic-iso` is the only bootc ISO type available in `image-builder-cli`. The `anaconda-iso` type is only in `bootc-image-builder` (BIB), which is broken by the GPG key bug.
 
-- Creates a self-contained ISO with the full container embedded
-- Does not require network access at install time
-- Is the recommended path forward for bootc-based ISOs
+**This is a known limitation.** `bootc-generic-iso` does NOT embed the container image into the ISO. Users must have network access to complete installation. The installation will hang trying to download the image if no network is available.
 
-The tradeoff: `bootc-generic-iso` requires Anaconda + build tools in the container image, which is why we need the separate `Containerfile.iso`.
+The intended goal is a self-contained ISO using `anaconda-iso`, which embeds the full OS into the squashfs volume.
+
+## Known Limitation: ISO Requires Network
+
+The current ISO uses `bootc-generic-iso` which **does not embed the container image**. The installation process:
+
+1. ISO boots to Anaconda
+2. Anaconda presents the installation UI
+3. When user proceeds, Anaconda tries to pull the container image from the registry
+4. **If no network is available, installation hangs indefinitely**
+
+This is not the desired behavior for a distributable ISO. Users should be able to install offline.
+
+## Recommendations
+
+The goal is a self-contained ISO using `anaconda-iso` which embeds the full OS into the squashfs volume.
+
+### Fix options (pick one)
+
+1. **Use `image-builder-cli` with `anaconda-iso` type and `--force-repo`** — The `image-builder-cli` has `--force-repo` to override repo configurations (e.g., disable GPG checking for `terra-mesa`). Test whether it accepts `anaconda-iso` as a type despite docs saying it's unsupported. BIB is a compatibility wrapper around the unified tool, so this might work.
+
+2. **Use BIB with `--force-repo-dir` if it exists** — Check if newer BIB container tags include the `--force-repo-dir` flag from the unified tool. If so, pass it via `additional-args` to disable GPG checking for the problematic repo.
+
+3. **Fix the GPG key upstream in bazzite** — Change `gpgkey=file:///etc/pki/rpm-gpg/...` to an HTTPS URL in the `terra-mesa` repo config. This is an upstream bazzite/ublue issue.
+
+4. **Wait for upstream BIB fix** — The osbuild/bootc-image-builder#1188 issue is open since Jan 2026. No timeline.
+
+**Option 1 is the most promising immediate path.** The `image-builder-cli` container likely supports `anaconda-iso` internally (since BIB is a compatibility wrapper around it), and `--force-repo` can override the GPG key configuration.
 
 ## Key Files Added
 
@@ -124,7 +153,7 @@ build-disk.yml
 
 ## Upstream Issues
 
-- **osbuild/bootc-image-builder#1188**: GPG key `file://` path resolution bug in BIB depsolver. Open since Jan 2026. The `image-builder-cli` migration works around this.
+- **osbuild/bootc-image-builder#1188**: GPG key `file://` path resolution bug in BIB depsolver. Open since Jan 2026. The `image-builder-cli` migration works around the build failure but introduces the network requirement limitation.
 - **osbuild/image-builder**: The unified tool is the future. `bootc-image-builder` is a compatibility wrapper.
 - **bazzite/ublue**: The `terra-mesa` repo uses `gpgkey=file://` paths. An upstream fix to use HTTPS URLs would resolve the root cause, but is outside our control.
 
@@ -141,3 +170,7 @@ The bazzite base image already has `default.target` and `autovt@.service` symlin
 ### image-builder-cli "unknown flag: --output"
 
 `image-builder-cli` uses `--output-dir`, not `--output`. The `output` directory must exist before the container runs.
+
+### Installation hangs trying to download image
+
+The ISO was built with `bootc-generic-iso` which requires network access. Switch to `anaconda-iso` type (see Recommendations above).
