@@ -28,13 +28,23 @@ curl -s https://install.zerotier.com | bash || {
 
 # --- k3s binary ---
 echo "Installing k3s..."
+
+# Ensure Rancher repo is available for k3s-selinux
+cat > /etc/yum.repos.d/rancher-k3s-common.repo <<'REPO'
+[rancher-k3s-common-stable]
+name=Rancher K3s Common (stable)
+baseurl=https://rpm.rancher.io/k3s/stable/common/centos/8/noarch
+enabled=1
+gpgcheck=1
+gpgkey=https://rpm.rancher.io/public.key
+REPO
+
 K3S_VERSION="${K3S_VERSION:-v1.35.5+k3s1}"
 curl -sfL https://get.k3s.io | \
     INSTALL_K3S_SKIP_ENABLE=true \
     INSTALL_K3S_SKIP_START=true \
     INSTALL_K3S_VERSION="${K3S_VERSION}" \
     sh -
-
 # Verify installation
 if command -v k3s &>/dev/null; then
     echo "k3s installed: $(k3s --version)"
