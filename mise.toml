@@ -1,51 +1,70 @@
+# mise configuration for WhiteBlossom OS
+# https://mise.jdx.dev
+#
+# Quick start:
+#   mise install          # Install tools
+#   mise run <task>       # Run a task
+#   mise tasks            # List all available tasks
+
 [tools]
 "github:SurgeDM/Surge" = "latest"
 
-# ── Build tasks (redirect to Justfile) ─────────────────────────────────
-[tasks.build-workstation]
+# ===============================
+# Build (container image)
+# ===============================
+
+[tasks."build:workstation"]
 description = "Build workstation container image"
 run = "just build workstation"
 
-[tasks.build-iot]
+[tasks."build:iot"]
 description = "Build IoT container image"
 run = "just build iot"
 
-[tasks.build-cloud]
+[tasks."build:cloud"]
 description = "Build cloud container image"
 run = "just build cloud"
 
-[tasks.build-handheld]
+[tasks."build:handheld"]
 description = "Build handheld container image"
 run = "just build handheld"
-# ── Workstation tasks ──────────────────────────────────────────────────
-[tasks.iso-workstation]
-description = "Launch workstation ISO in QEMU with graphical installer"
-run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio -cdrom dist/bootc-bazzite-44-bootc-generic-iso-x86_64.iso -boot d"
 
-[tasks.boot-workstation]
-description = "Boot installed workstation from disk (post-installation)"
-run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio"
+# ===============================
+# Disk (QCOW2 / RAW conversion)
+# ===============================
 
-# ── IoT tasks ──────────────────────────────────────────────────────────
-[tasks.boot-iot]
-description = "Boot IoT image in QEMU (headless, serial console)"
-run = "qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 -display none -serial mon:stdio -drive file=dist/iot.raw,format=raw,if=virtio"
+[tasks."disk:workstation"]
+description = "Build workstation QCOW2 disk image"
+run = "just build-qcow2 workstation"
 
-# ── Cloud tasks ──────────────────────────────────────────────────────
-[tasks.boot-cloud]
-description = "Boot cloud node in QEMU (headless)"
-run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -display none -serial mon:stdio -drive file=dist/cloud.qcow2,format=qcow2,if=virtio"
+[tasks."disk:iot"]
+description = "Build IoT raw disk image"
+run = "just build-raw iot"
 
-# ── Handheld tasks ─────────────────────────────────────────────────────
-[tasks.boot-handheld]
-description = "Boot handheld image in QEMU"
-run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/handheld.qcow2,format=qcow2,if=virtio"
+[tasks."disk:cloud"]
+description = "Build cloud QCOW2 disk image"
+run = "just build-qcow2 cloud"
 
-# ── Legacy aliases ─────────────────────────────────────────────────────
-[tasks.iso]
-description = "Alias for iso-workstation (deprecated)"
-run = "mise run iso-workstation"
+[tasks."disk:handheld"]
+description = "Build handheld QCOW2 disk image"
+run = "just build-qcow2 handheld"
 
-[tasks.boot]
-description = "Alias for boot-workstation (deprecated)"
-run = "mise run boot-workstation"
+# ===============================
+# Run (QEMU)
+# ===============================
+
+[tasks."run:workstation"]
+description = "Build and run workstation in QEMU (graphical, GPU)"
+run = "just build-qcow2 workstation && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+
+[tasks."run:iot"]
+description = "Build and run IoT in QEMU (ARM, headless)"
+run = "just build-raw iot && qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 -display none -serial mon:stdio -drive file=output/raw/disk.raw,format=raw,if=virtio"
+
+[tasks."run:cloud"]
+description = "Build and run cloud in QEMU (headless, serial console)"
+run = "just build-qcow2 cloud && qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 -nographic -serial mon:stdio -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+
+[tasks."run:handheld"]
+description = "Build and run handheld in QEMU (graphical)"
+run = "just build-qcow2 handheld && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
