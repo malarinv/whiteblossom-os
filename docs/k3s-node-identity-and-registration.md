@@ -99,6 +99,7 @@ k3s doesn't have Talos's machined daemon or TPM integration. We adapt the patter
 │                                                                     │
 │  On approval:                                                       │
 │  ├─ Call Vault: issue short-lived k3s bootstrap token (TTL 5m)    │
+│  ├─ Authorize node on ZeroTier network (if ZT auth enabled)       │
 │  ├─ Read Vault: server_url, zerotier_network, node_labels         │
 │  └─ Return to node (signed response)                               │
 └─────────────────────────────────────────────────────────────────────┘
@@ -499,7 +500,11 @@ The registration service calls this endpoint, gets a short-lived token, and pass
 | Complexity | Trivial | Medium |
 | Network dependency | None (secrets baked in) | Needs ZT network at first boot |
 
-## Open Questions
+## Resolved Decisions
+
+1. **ZeroTier authorization:** The registration service handles ZeroTier node authorization as part of the registration flow. After the node proves its identity, the service can authorize it on the ZeroTier network (if ZT auth is enabled). This means the ZT network join happens in two steps: (1) node joins network immediately on boot (network ID is public), (2) registration service authorizes the node's ZT identity for full access.
+
+## Remaining Open Questions
 
 1. **Registration service availability:** It runs in-cluster, but new nodes need it *before* they join. The service must be accessible via ZeroTier IP on an existing node. Should it run on the control plane VIP (`172.28.28.28`) or on a dedicated node?
 
