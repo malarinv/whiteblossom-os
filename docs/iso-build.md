@@ -72,7 +72,7 @@ Modern Anaconda (Fedora 41+) has fully migrated from X11 to Wayland. The graphic
 
 ### Required Packages
 
-These are installed in `Containerfile.iso` under "Graphical installer dependencies":
+The following packages are required for the graphical installer. They are **already present in the Bazzite base image** and do not need to be installed in `Containerfile.iso`:
 
 | Package | Role |
 |---------|------|
@@ -80,10 +80,9 @@ These are installed in `Containerfile.iso` under "Graphical installer dependenci
 | `gnome-kiosk` | Minimal Wayland compositor for single-app display |
 | `mesa-dri-drivers` | DRI drivers for hardware-accelerated rendering |
 | `mesa-vulkan-drivers` | Vulkan drivers for VirGL/Venus 3D acceleration |
-| `wayland` | Core Wayland protocol libraries |
 | `xorg-x11-server-Xwayland` | X11 compatibility layer for legacy components |
 
-Without these packages, Anaconda cannot initialize the Wayland compositor and falls back to text mode.
+Without these packages, Anaconda cannot initialize the Wayland compositor and falls back to text mode. If building a custom base image, ensure these are included.
 
 ### virtio-gl in QEMU
 
