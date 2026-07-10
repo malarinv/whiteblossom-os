@@ -23,16 +23,6 @@ RUN dnf install -qy \
     google-noto-sans-cjk-fonts \
     && dnf clean all
 
-# --- Graphical installer dependencies (Wayland + virtio-gl) ---
-RUN dnf install -qy \
-    anaconda-gui \
-    gnome-kiosk \
-    mesa-dri-drivers \
-    mesa-vulkan-drivers \
-    wayland \
-    xorg-x11-server-Xwayland \
-    && dnf clean all
-
 # --- Build tools required by image-builder-cli ---
 RUN dnf install -qy \
     xorrisofs \
