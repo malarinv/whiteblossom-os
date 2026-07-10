@@ -35,19 +35,19 @@ run = "just build handheld"
 
 [tasks."disk:workstation"]
 description = "Build workstation QCOW2 disk image"
-run = "just build-qcow2 workstation"
+run = "just build-qcow2 workstation localhost/whiteblossom-os latest"
 
 [tasks."disk:iot"]
 description = "Build IoT raw disk image"
-run = "just build-raw iot"
+run = "just build-raw iot localhost/whiteblossom-iot latest"
 
 [tasks."disk:cloud"]
 description = "Build cloud QCOW2 disk image"
-run = "just build-qcow2 cloud"
+run = "just build-qcow2 cloud localhost/whiteblossom-cloud latest"
 
 [tasks."disk:handheld"]
 description = "Build handheld QCOW2 disk image"
-run = "just build-qcow2 handheld"
+run = "just build-qcow2 handheld localhost/whiteblossom-handheld latest"
 
 # ===============================
 # Run (QEMU)
@@ -55,16 +55,16 @@ run = "just build-qcow2 handheld"
 
 [tasks."run:workstation"]
 description = "Build and run workstation in QEMU (graphical, GPU)"
-run = "just build-qcow2 workstation && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+run = "just build-qcow2 workstation localhost/whiteblossom-os latest && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
 
 [tasks."run:iot"]
 description = "Build and run IoT in QEMU (ARM, headless)"
-run = "just build-raw iot && qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 -display none -serial mon:stdio -drive file=output/raw/disk.raw,format=raw,if=virtio"
+run = "just build-raw iot localhost/whiteblossom-iot latest && qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 -display none -serial mon:stdio -drive file=output/raw/disk.raw,format=raw,if=virtio"
 
 [tasks."run:cloud"]
 description = "Build and run cloud in QEMU (headless, serial console)"
-run = "just build-qcow2 cloud && qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 -nographic -serial mon:stdio -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+run = "just build-qcow2 cloud localhost/whiteblossom-cloud latest && qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 -nographic -serial mon:stdio -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
 
 [tasks."run:handheld"]
 description = "Build and run handheld in QEMU (graphical)"
-run = "just build-qcow2 handheld && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
+run = "just build-qcow2 handheld localhost/whiteblossom-handheld latest && qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio"
