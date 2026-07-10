@@ -16,7 +16,8 @@ dnf5 install -y \
     iproute \
     python3 \
     openssl \
-    jq
+    jq \
+    container-selinux
 
 # --- ZeroTier ---
 echo "Installing ZeroTier..."

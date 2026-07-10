@@ -97,6 +97,7 @@ build variant="workstation" $target_image=image_name $tag=default_tag:
     podman build \
         "${BUILD_ARGS[@]}" \
         --pull=newer \
+        --no-cache \
         --target "${variant}" \
         --tag "${target_image}:${tag}" \
         .
