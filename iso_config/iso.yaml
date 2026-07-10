@@ -2,5 +2,5 @@ label: "WhiteBlossom-OS"
 grub2:
   entries:
     - name: "WhiteBlossom OS (Live)"
-      linux: "/images/pxeboot/vmlinuz inst.stage2=hd:LABEL=WhiteBlossom-OS console=tty0 inst.text selinux=0 rhgb quiet"
+      linux: "/images/pxeboot/vmlinuz inst.stage2=hd:LABEL=WhiteBlossom-OS console=tty0 selinux=0 rhgb quiet"
       initrd: "/images/pxeboot/initrd.img"

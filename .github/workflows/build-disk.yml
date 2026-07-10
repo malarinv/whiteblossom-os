@@ -107,7 +107,7 @@ jobs:
           sudo apt-get install -y rclone
           rclone copy $SOURCE_DIR S3:${{ secrets.S3_BUCKET_NAME }}
 
-  # ── ISO (bootc-generic-iso via image-builder-cli) ──────────────────────
+  # ── ISO (anaconda-iso via image-builder-cli) ─────────────────────────
   build-iso:
     name: Build ISO
     runs-on: ${{ inputs.platform == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
@@ -176,7 +176,7 @@ jobs:
             --output-dir /output \
             --bootc-default-fs btrfs \
             --bootc-ref localhost/whiteblossom-iso:latest \
-            bootc-generic-iso
+            anaconda-iso
 
       - name: Upload ISO to Job Artifacts
         if: inputs.upload-to-s3 != true && github.event_name != 'pull_request'

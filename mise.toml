@@ -1,0 +1,6 @@
+[tools]
+"github:SurgeDM/Surge" = "latest"
+
+[tasks.iso]
+description = "Launch the whiteblossom OS ISO in QEMU with graphical installer"
+run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio -cdrom dist/bootc-bazzite-44-bootc-generic-iso-x86_64.iso -boot d"

@@ -1,5 +1,5 @@
 # ISO-specific overlay on top of the main WhiteBlossom OS image.
-# This is used by build-disk.yml to produce bootc-generic-iso artifacts.
+# This is used by build-disk.yml to produce self-contained anaconda-iso artifacts.
 # It adds Anaconda and the build tools required by image-builder-cli,
 # without polluting the primary container image.
 #
@@ -21,6 +21,16 @@ RUN dnf install -qy \
     default-fonts-core-sans \
     default-fonts-other-sans \
     google-noto-sans-cjk-fonts \
+    && dnf clean all
+
+# --- Graphical installer dependencies (Wayland + virtio-gl) ---
+RUN dnf install -qy \
+    anaconda-gui \
+    gnome-kiosk \
+    mesa-dri-drivers \
+    mesa-vulkan-drivers \
+    wayland \
+    xorg-x11-server-Xwayland \
     && dnf clean all
 
 # --- Build tools required by image-builder-cli ---
