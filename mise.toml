@@ -1,6 +1,22 @@
 [tools]
 "github:SurgeDM/Surge" = "latest"
 
+# ── Build tasks (redirect to Justfile) ─────────────────────────────────
+[tasks.build-workstation]
+description = "Build workstation container image"
+run = "just build workstation"
+
+[tasks.build-iot]
+description = "Build IoT container image"
+run = "just build iot"
+
+[tasks.build-cloud]
+description = "Build cloud container image"
+run = "just build cloud"
+
+[tasks.build-handheld]
+description = "Build handheld container image"
+run = "just build handheld"
 # ── Workstation tasks ──────────────────────────────────────────────────
 [tasks.iso-workstation]
 description = "Launch workstation ISO in QEMU with graphical installer"

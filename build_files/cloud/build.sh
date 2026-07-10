@@ -1,10 +1,8 @@
 #!/bin/bash
 
 # WhiteBlossom OS Cloud Build Script
-# Cluster node build with k3s and container runtimes.
+# Cluster node build with k3s, ZeroTier, and registration client.
 # Shared setup is handled by shared/build.sh — run that first.
-#
-# TODO: Fill in package lists and configuration for cloud nodes.
 
 set -ouex pipefail
 
@@ -20,48 +18,22 @@ if [ -d "/ctx/build_files/cloud" ]; then
 fi
 
 # ============================================================================
-# STEP 1: Install K3s and Container Runtime Packages
+# STEP 1: Install k3s, ZeroTier, and Dependencies
 # ============================================================================
 
-echo "Installing K3s packages..."
-
-if [ -f "${SCRIPT_DIR}/install-k3s.sh" ]; then
-    bash "${SCRIPT_DIR}/install-k3s.sh"
-else
-    echo "WARNING: install-k3s.sh not found. Using placeholder packages."
-    # K3s and container runtime packages
-    dnf5 install -y \
-        systemd \
-        NetworkManager \
-        openssh-server \
-        curl \
-        iproute \
-        || true
-
-    # Install k3s via official script
-    echo "Installing k3s..."
-    curl -sfL https://get.k3s.io | sh - || echo "k3s install skipped (no network during build)"
-fi
+echo "Installing k3s, ZeroTier, and dependencies..."
+bash "${SCRIPT_DIR}/install-k3s.sh"
 
 echo ""
-echo "✓ K3s packages installed"
+echo "✓ Packages installed"
 echo ""
 
 # ============================================================================
-# STEP 2: Configure Cluster Networking
+# STEP 2: Configure Cluster Systemd Units
 # ============================================================================
 
-echo "Configuring cluster networking..."
-
-if [ -f "${SCRIPT_DIR}/configure-cluster.sh" ]; then
-    bash "${SCRIPT_DIR}/configure-cluster.sh"
-else
-    echo "WARNING: configure-cluster.sh not found. Using defaults."
-    systemctl set-default multi-user.target || true
-    systemctl enable sshd.service || true
-    systemctl enable NetworkManager.service || true
-    # k3s service is enabled by the k3s install script
-fi
+echo "Configuring cluster systemd units..."
+bash "${SCRIPT_DIR}/configure-cluster.sh"
 
 echo ""
 echo "✓ Cluster configuration complete"

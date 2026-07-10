@@ -40,17 +40,20 @@ Agent nodes join via `--server https://172.28.28.28:6443 --token-file /var/lib/r
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Image Build (podman build)                   │
 │                                                                 │
-│  Containerfile cloud stage:                                       │
+│  Containerfile cloud stage (fedora-bootc:44):                   │
 │  ├─ shared/build.sh          (tmux, system files, cleanup)      │
 │  ├─ cloud/build.sh:                                            │
-│  │   ├─ Install k3s binary → /usr/local/bin/k3s                │
-│  │   ├─ Install ZeroTier → dnf5 install zerotier-one           │
-│  │   ├─ Install Docker (for kube-vip)                          │
-│  │   ├─ Install cni-plugins, NetworkManager-cloud-setup        │
-│  │   ├─ Copy first-boot systemd units                          │
-│  │   └─ Copy provisioning script                               │
-│  ├─ COPY k3s-join.ign → /usr/lib/ignition/config.ign          │
-│  ├─ RUN touch /boot/ignition.firstboot                         │
+│  │   ├─ install-k3s.sh:                                        │
+│  │   │   ├─ k3s binary → /usr/local/bin/k3s                   │
+│  │   │   ├─ ZeroTier → zerotier-one                            │
+│  │   │   └─ Dependencies (curl, iproute, python3, openssl)    │
+│  │   └─ configure-cluster.sh:                                  │
+│  │       ├─ wb-register.service (first-boot registration)      │
+│  │       ├─ k3s-config.service (write k3s config)             │
+│  │       └─ k3s-agent.service.d/override.conf (ordering)      │
+│  ├─ system_files/cloud/:                                       │
+│  │   ├─ /usr/local/bin/wb-register (registration client)      │
+│  │   └─ /usr/local/bin/k3s-config-write (config writer)       │
 │  ├─ ostree container commit                                     │
 │  └─ bootc container lint                                        │
 └─────────────────────────────────────────────────────────────────┘
@@ -59,23 +62,19 @@ Agent nodes join via `--server https://172.28.28.28:6443 --token-file /var/lib/r
 ┌─────────────────────────────────────────────────────────────────┐
 │                Disk Build (bootc-image-builder)                 │
 │                                                                 │
-│  Inject per-node config:                                        │
-│  -v ./node-alpha.yaml:/config/files/etc/k3s-node-config.yaml   │
-│                                                                 │
-│  Output: QCOW2 / raw disk with embedded per-node config        │
+│  Output: QCOW2 / raw disk (no per-node secrets baked in)       │
 └─────────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    First Boot (VM / bare metal)                 │
 │                                                                 │
-│  1. Ignition runs → places files from config.ign               │
-│  2. k3s-join.service starts (ConditionFirstBoot=yes)           │
-│  3. k3s-join.sh reads /etc/k3s-node-config.yaml                │
-│  4. Joins ZeroTier network, waits for IP                       │
-│  5. Writes /etc/rancher/k3s/config.yaml                        │
-│  6. Installs k3s agent, starts k3s-agent.service               │
-│  7. Node appears in cluster with correct labels                 │
+│  1. ZeroTier starts, joins network (network ID in image)       │
+│  2. wb-register.service runs registration client               │
+│  3. Client proves identity → gets k3s token + config           │
+│  4. k3s-config.service writes /etc/rancher/k3s/config.yaml    │
+│  5. k3s-agent.service starts, joins cluster                    │
+│  6. Node appears in cluster with correct labels                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -398,43 +397,44 @@ The k3s-join service has `ConditionFirstBoot=yes`, so upgrades don't re-run the 
 | Updates | Re-run playbook | `bootc upgrade` + rebuild |
 | Multi-arch | Works (Ansible is arch-agnostic) | Needs per-arch images |
 
-## Open Questions
+## Resolved Decisions
 
-1. **Should we use Butane embedded in the image, or just place the files directly in the Containerfile?**
-   - Butane adds a build dependency (`butane` CLI) but provides a clean, validated YAML source
-   - Direct Containerfile placement is simpler but loses the Butane validation
-   - Recommendation: Use Butane for the service logic, but the per-node config file is just a plain YAML placed at disk build time
+1. **Butane as build dependency:** Use `butane` via mise tools. Install from GitHub registry (like surge) if needed. Butane validates the YAML at build time; the transpiled Ignition config is embedded in the image.
 
-2. **How to handle the k3s-join.sh parsing YAML without `yq`?**
-   - The script uses `grep`/`sed` for simple key-value parsing
-   - For complex YAML (nested lists), we'd need `yq` or `python3`
-   - The node_labels list needs `python3` (available in the Bazzite base)
-   - Alternative: Use a simpler config format (key=value in a shell-sourceable file)
+2. **No monolithic k3s-join.sh:** Use multiple idempotent systemd units instead:
+   - `wb-register.service` — runs registration client, writes secrets
+   - `k3s-config.service` — writes k3s config from registration response
+   - `k3s-agent.service.d/override.conf` — ensures agent starts after config
+   Each unit checks `ConditionPathExists` for idempotency. No custom provisioning script needed.
 
-3. **Should the image include k3s binary or install it on first boot?**
-   - Including the binary makes the image larger but avoids network dependency on first boot
-   - Installing on first boot keeps the image small but requires internet access
-   - Recommendation: Include the binary (it's ~60MB, acceptable for a server image)
+3. **Include k3s binary in image:** The k3s binary is baked into the image during build. No network dependency on first boot for k3s installation.
 
-4. **ZeroTier: install in image or on first boot?**
-   - ZeroTier must be running before k3s-join.sh runs
-   - Installing in the image is cleaner
-   - The ZeroTier network join (`zerotier-cli join`) happens in the provisioning script, not at build time
+4. **ZeroTier in image:** ZeroTier is installed during build and enabled by default. The ZeroTier network ID is public configuration baked into the image — it's not a secret. The node joins the network immediately on boot, then contacts the registration service via ZeroTier.
 
-5. **Secret delivery: disk build injection vs runtime registration?**
-   - Previous approach: inject `/etc/k3s-node-config.yaml` with cluster token at disk build time
-   - Updated approach: node registers with identity service, receives short-lived token at runtime
-   - See [Node Identity and Registration](k3s-node-identity-and-registration.md) for the security architecture
-   - The disk build injection approach is simpler but means every disk image contains the cluster token
+5. **Registration service handles ZeroTier authorization:** The registration service can authorize ZeroTier nodes as part of the registration flow. After the node proves its identity, the service can issue ZeroTier-specific authorization (network tokens, etc.) alongside k3s tokens.
+
+6. **Secret delivery:** Runtime registration only. No per-node secrets baked into the image or injected at disk build time. The node generates its identity at first boot, registers with the service, and receives short-lived tokens.
+
+## Remaining Open Questions
+
+1. **Registration service availability:** It runs in-cluster, but new nodes need it *before* they join. The service must be accessible via ZeroTier IP on an existing node. Should it run on the control plane VIP (`172.28.28.28`) or on a dedicated node?
+
+2. **Fallback if registration fails:** If the registration service is down, the node can't join. Should there be a retry loop, or a fallback to manual provisioning?
+
+3. **Vault deployment:** Is OpenBao/Vault already running somewhere, or does it need to be deployed? If not yet available, the registration service can hold secrets in memory and issue them directly (simpler, but less secure).
+
+4. **Hardware UUID availability:** Not all VMs expose `/sys/class/dmi/id/product_uuid`. Cloud instances may need instance ID from metadata API instead. The registration client should fallback gracefully.
 
 ## Implementation Steps
 
-1. Create `build_files/cloud/k3s-join.bu` — Butane config
-2. Create `build_files/cloud/wb-register` — Registration client (see [Node Identity doc](k3s-node-identity-and-registration.md))
-3. Create `build_files/cloud/install-k3s.sh` — k3s binary + dependencies
-4. Create `build_files/cloud/configure-cluster.sh` — systemd units, disabled services
-5. Update `build_files/cloud/build.sh` — Orchestrator
-6. Update `Containerfile` cloud stage — Copy Ignition, set firstboot flag
-7. Create `registration-service/` — Identity registration service
-8. Update `Justfile` — k3s-specific build commands
-9. Update `docs/iso-build.md` — Add k3s section
+1. ✅ Create `build_files/cloud/install-k3s.sh` — k3s binary + ZeroTier + dependencies
+2. ✅ Create `build_files/cloud/configure-cluster.sh` — systemd units (wb-register, k3s-config, k3s-agent override)
+3. ✅ Create `system_files/cloud/usr/local/bin/wb-register` — Registration client
+4. ✅ Create `system_files/cloud/usr/local/bin/k3s-config-write` — Config writer
+5. ✅ Update `build_files/cloud/build.sh` — Orchestrator
+6. ✅ Update `Containerfile` cloud stage — fedora-bootc:44 base
+7. Install Butane via mise — build dependency for Ignition config validation
+8. Create `build_files/cloud/k3s-join.bu` — Butane config (if needed for Ignition-based provisioning)
+9. Create `registration-service/` — Identity registration service
+10. Update `Justfile` — cloud-specific build commands
+11. Update `docs/iso-build.md` — Add cloud section

@@ -88,16 +88,16 @@ RUN bootc container lint
 # =============================================================================
 # Variant: Cloud
 # Kubernetes cluster node with k3s
-# Base: Bazzite (provides container runtime stack)
+# Base: Fedora Bootc (minimal, headless — same as IoT)
 # =============================================================================
-FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable AS cloud
+FROM quay.io/fedora/fedora-bootc:44 AS cloud
 
 ## Image Purpose
 # WhiteBlossom OS Cloud: Kubernetes cluster node
 # - k3s lightweight Kubernetes distribution
-# - Container runtime stack (containerd, runc)
-# - Cluster networking and storage
-# - Minimal desktop for occasional management
+# - ZeroTier for cluster networking
+# - Container runtime stack (containerd, runc via k3s)
+# - Registration client for identity-based cluster join
 
 # Run shared build
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
