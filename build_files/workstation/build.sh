@@ -49,17 +49,17 @@ echo ""
 # STEP 1.5: Install Dev Boot Dependencies
 # ============================================================================
 
-echo "Installing dev-boot dependencies..."
-# virtiofsd: host-side daemon for fast VM boot via direct kernel (dev-boot)
-# Installed via dnf during container build, committed to OSTree
-if command -v dnf5 >/dev/null 2>&1; then
-    dnf5 install -y virtiofsd || echo "WARNING: virtiofsd install failed"
-elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y virtiofsd || echo "WARNING: virtiofsd install failed"
+echo "Step 1.5/5: Installing Dev Boot Dependencies..."
+echo "================================================"
+
+if [ -f "${SCRIPT_DIR}/install-dev-boot-deps.sh" ]; then
+    bash "${SCRIPT_DIR}/install-dev-boot-deps.sh"
+else
+    echo "WARNING: install-dev-boot-deps.sh not found. Skipping."
 fi
 
 echo ""
-echo "✓ Dev boot dependencies installed"
+echo "✓ Dev boot dependencies installation complete"
 echo ""
 
 # ============================================================================
