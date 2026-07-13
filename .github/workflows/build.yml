@@ -184,14 +184,15 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         run: |
           echo "${{ secrets.SIGNING_SECRET }}" > cosign.key
-          PRIMARY="${{ steps.registry_case.outputs.lowercase }}/${{ steps.image_case.outputs.lowercase }}"
+          # tags already contain full image references (e.g., ghcr.io/owner/image:tag)
           for tag in ${{ steps.metadata.outputs.tags }}; do
-            cosign sign -y --key cosign.key $PRIMARY:$tag
+            cosign sign -y --key cosign.key $tag
           done
           if [ -n "${{ matrix.secondary_image }}" ]; then
             SECONDARY="${{ steps.registry_case.outputs.lowercase }}/${{ matrix.secondary_image }}"
             for tag in ${{ steps.metadata.outputs.tags }}; do
-              cosign sign -y --key cosign.key $SECONDARY:$tag
+              # Extract just the tag portion (after the colon) for secondary image
+              cosign sign -y --key cosign.key ${SECONDARY}:${tag##*:}
             done
           fi
         env:
