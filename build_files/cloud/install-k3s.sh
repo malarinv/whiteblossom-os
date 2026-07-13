@@ -8,7 +8,7 @@ set -ouex pipefail
 echo "Installing k3s and ZeroTier..."
 
 # --- System dependencies ---
-dnf5 install -y --setopt=sslverify=0 \
+dnf5 install -y \
     systemd \
     NetworkManager \
     openssh-server \

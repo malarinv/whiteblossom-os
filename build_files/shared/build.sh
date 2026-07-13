@@ -22,9 +22,9 @@ echo ""
 
 echo "Installing base packages..."
 if command -v dnf5 >/dev/null 2>&1; then
-    dnf5 install -y --setopt=sslverify=0 tmux
+    dnf5 install -y tmux
 else
-    dnf install -y --setopt=sslverify=0 tmux
+    dnf install -y tmux
 fi
 
 # Enable virtiofs in initramfs for dev-boot support
