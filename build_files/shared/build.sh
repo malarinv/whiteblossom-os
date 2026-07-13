@@ -22,10 +22,14 @@ echo ""
 
 echo "Installing base packages..."
 if command -v dnf5 >/dev/null 2>&1; then
-    dnf5 install -y tmux
+    dnf5 install -y --setopt=sslverify=0 tmux
 else
-    dnf install -y tmux
+    dnf install -y --setopt=sslverify=0 tmux
 fi
+
+# Enable virtiofs in initramfs for dev-boot support
+mkdir -p /etc/dracut.conf.d
+echo 'add_dracutmodules+=" virtiofs "' > /etc/dracut.conf.d/virtiofs.conf
 
 # ============================================================================
 # STEP 2: Apply Shared System Files

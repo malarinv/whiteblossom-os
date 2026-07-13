@@ -185,6 +185,7 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
       "${target_image}:${tag}"
 
     mkdir -p output
+    sudo rm -rf "output/${type}"
     sudo mv -f $BUILDTMP/* output/
     sudo rmdir $BUILDTMP
     sudo chown -R $USER:$USER output/
@@ -201,11 +202,13 @@ _rebuild-bib $target_image $tag $type $config $variant="workstation": (build var
 
 # Build QCOW2 for a specific variant
 [group('Build Virtal Machine Image')]
-build-qcow2 variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "qcow2" "disk_config/{{variant}}.toml")
+build-qcow2 variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag:
+    @just _build-bib {{target_image}} {{tag}} "qcow2" "disk_config/{{variant}}.toml"
 
 # Build RAW for a specific variant
 [group('Build Virtal Machine Image')]
-build-raw variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/{{variant}}.toml")
+build-raw variant="workstation" $target_image=("localhost/" + image_name) $tag=default_tag:
+    @just _build-bib {{target_image}} {{tag}} "raw" "disk_config/{{variant}}.toml"
 
 # Build ISO for a specific variant
 [group('Build Virtal Machine Image')]
@@ -296,6 +299,174 @@ spawn-vm rebuild="0" type="qcow2" ram="6G":
       -i ./output/**/*.{{ type }}
 
 
+# ============================================================================
+# Dev Boot: Direct kernel boot from container image (skips BIB)
+# Fast dev loop for cloud/IoT variants (~5 second boot)
+# Requires: virtiofsd, qemu-system-x86_64, KVM
+# Usage: just dev-boot cloud
+# ============================================================================
+[group('Dev Boot')]
+_dev-boot $variant $target_image $tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Validate variant
+    if [[ "$variant" != "cloud" && "$variant" != "iot" ]]; then
+        echo "Error: dev-boot only supports cloud and iot variants"
+        echo "Workstation/handheld require BIB (bootc-image-builder)"
+        exit 1
+    fi
+
+    # Check prerequisites
+    if ! command -v virtiofsd &>/dev/null; then
+        echo "Error: virtiofsd not found. Install: dnf install virtiofsd"
+        exit 1
+    fi
+
+    if ! [ -e /dev/kvm ]; then
+        echo "Error: /dev/kvm not found. KVM acceleration required."
+        exit 1
+    fi
+
+    # Check if image exists
+    IMAGE_TAG="${target_image}:${tag}"
+    if ! podman image exists "$IMAGE_TAG" 2>/dev/null; then
+        echo "Image not found: $IMAGE_TAG"
+        echo "Build first: just build ${variant}"
+        exit 1
+    fi
+
+    # Create container from image
+    CONTAINER_ID=$(podman create "$IMAGE_TAG" /bin/true)
+    echo "Created container: ${CONTAINER_ID:0:12}"
+
+    # Global variables for cleanup
+    QEMU_PID=""
+    SOCK_DIR=""
+    MNT_DIR=""
+
+    # Cleanup function
+    cleanup() {
+        echo ""
+        echo "Shutting down..."
+        # Kill virtiofsd if running
+        if [ -n "$SOCK_DIR" ] && [ -f "${SOCK_DIR}/virtiofsd.pid" ]; then
+            kill "$(cat "${SOCK_DIR}/virtiofsd.pid")" 2>/dev/null || true
+        fi
+        # Stop QEMU if running
+        if [ -n "$QEMU_PID" ] && kill -0 "$QEMU_PID" 2>/dev/null; then
+            kill "$QEMU_PID" 2>/dev/null || true
+            wait "$QEMU_PID" 2>/dev/null || true
+        fi
+        # Unmount and remove container
+        if [ -n "$CONTAINER_ID" ]; then
+            podman unmount "$CONTAINER_ID" 2>/dev/null || true
+            podman rm "$CONTAINER_ID" 2>/dev/null || true
+        fi
+        # Remove temp dirs
+        [ -n "$MNT_DIR" ] && rm -rf "$MNT_DIR"
+        [ -n "$SOCK_DIR" ] && rm -rf "$SOCK_DIR"
+        echo "Cleanup complete."
+    }
+    trap cleanup EXIT
+
+    # Mount container rootfs
+    echo "Mounting container rootfs..."
+    MNT_DIR=$(mktemp -d -t wb-dev-mnt-XXXXXX)
+    ROOTFS_PATH=$(podman mount "$CONTAINER_ID")
+    echo "Rootfs: $ROOTFS_PATH"
+
+    # Find kernel and initramfs
+    KERNEL_PATH=$(find "$ROOTFS_PATH/boot" -maxdepth 1 -name "vmlinuz-*" | head -n 1)
+    INITRD_PATH=$(find "$ROOTFS_PATH/boot" -maxdepth 1 -name "initramfs-*" | head -n 1)
+
+    if [ -z "$KERNEL_PATH" ] || [ -z "$INITRD_PATH" ]; then
+        echo "Error: Could not find kernel/initramfs in container /boot"
+        echo "Contents of /boot:"
+        ls -la "$ROOTFS_PATH/boot/" 2>/dev/null || echo "  (empty or missing)"
+        exit 1
+    fi
+
+    echo "Kernel: $(basename "$KERNEL_PATH")"
+    echo "Initrd: $(basename "$INITRD_PATH")"
+
+    # Spawn virtiofsd
+    SOCK_DIR=$(mktemp -d -t wb-dev-sock-XXXXXX)
+    VHOST_SOCK="${SOCK_DIR}/vhost-fs.sock"
+
+    echo "Starting virtiofsd..."
+    virtiofsd \
+        --socket-path="$VHOST_SOCK" \
+        --shared-dir="$ROOTFS_PATH" \
+        --sandbox none \
+        --cache none &
+    echo $! > "${SOCK_DIR}/virtiofsd.pid"
+
+    # Wait for socket
+    while [ ! -S "$VHOST_SOCK" ]; do
+        sleep 0.1
+    done
+    echo "virtiofsd ready."
+
+    # Determine SSH port
+    SSH_PORT=2222
+    while ss -tunalp | grep -q ":${SSH_PORT}"; do
+        SSH_PORT=$((SSH_PORT + 1))
+    done
+
+    # SSH key handling
+    SSH_KEY_ARG=""
+    if [ -f "$HOME/.ssh/wb-dev.pub" ]; then
+        SSH_KEY_ARG="-fw_cfg name=opt/io.systemd.credentials/ssh.authorized_keys.root,file=$HOME/.ssh/wb-dev.pub"
+        echo "SSH key: $HOME/.ssh/wb-dev.pub"
+    else
+        echo "Warning: No SSH key at ~/.ssh/wb-dev.pub"
+        echo "  Create one: ssh-keygen -t ed25519 -f ~/.ssh/wb-dev -N ''"
+    fi
+
+    echo ""
+    echo "Starting QEMU (dev-boot mode)..."
+    echo "SSH: ssh -p ${SSH_PORT} -o StrictHostKeyChecking=no -i ~/.ssh/wb-dev root@localhost"
+    echo "Press Ctrl-A X to exit QEMU"
+    echo ""
+
+    # Determine memory based on variant
+    MEMORY="4096"
+    SMP="2"
+    if [ "$variant" = "iot" ]; then
+        MEMORY="2048"
+        SMP="1"
+    fi
+
+    # Boot QEMU
+    qemu-system-x86_64 \
+        -enable-kvm \
+        -m "$MEMORY" \
+        -smp "$SMP" \
+        -cpu host \
+        -nographic \
+        -serial mon:stdio \
+        -netdev user,id=net0,hostfwd=tcp::${SSH_PORT}-:22 \
+        -device virtio-net-pci,netdev=net0 \
+        -kernel "$KERNEL_PATH" \
+        -initrd "$INITRD_PATH" \
+        -append "root=wb_dev_root rw rootfstype=virtiofs console=ttyS0 loglevel=7" \
+        -chardev socket,id=char0,path="$VHOST_SOCK" \
+        -device vhost-user-fs-pci,queue-size=1024,chardev=char0,tag=wb_dev_root \
+        -object memory-backend-file,id=mem,size=${MEMORY}M,mem-path=/dev/shm,share=on \
+        -numa node,memdev=mem \
+        $SSH_KEY_ARG &
+    QEMU_PID=$!
+
+    # Wait for QEMU to exit
+    wait "$QEMU_PID" || true
+
+# Dev boot convenience recipes
+[group('Dev Boot')]
+dev-boot-cloud: (_dev-boot "cloud" "localhost/whiteblossom-cloud" "latest")
+
+[group('Dev Boot')]
+dev-boot-iot: (_dev-boot "iot" "localhost/whiteblossom-iot" "latest")
 # Runs shell check on all Bash scripts
 lint:
     #!/usr/bin/env bash

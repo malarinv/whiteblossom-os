@@ -113,6 +113,14 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build_files/cloud/build.sh
 
+# Dev SSH key (only present in local builds, never in CI)
+COPY .ssh-dev.pub /tmp/dev-key.pub
+RUN if [ -s /tmp/dev-key.pub ]; then \
+      mkdir -p /usr/lib/ssh/authorized_keys.d && \
+      cp /tmp/dev-key.pub /usr/lib/ssh/authorized_keys.d/root && \
+      chmod 0600 /usr/lib/ssh/authorized_keys.d/root && \
+      echo "Dev SSH key installed"; \
+    fi && rm -f /tmp/dev-key.pub
 # Finalize OSTree commit
 RUN ostree container commit
 

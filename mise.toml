@@ -8,6 +8,7 @@
 
 [tools]
 "github:SurgeDM/Surge" = "latest"
+"npm:bats" = "latest"
 
 # ===============================
 # Build (container image)
@@ -81,16 +82,28 @@ qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 \
 '''
 
 [tasks."run:cloud"]
-description = "Run cloud in QEMU (headless, serial console)"
+description = "Run cloud in QEMU (headless, serial + SSH key injection)"
 run = '''
 if [ ! -f output/qcow2/disk.qcow2 ]; then
   echo "Disk not found. Build it first:"
   echo "  mise run disk:cloud"
   exit 1
 fi
+if [ ! -f "$HOME/.ssh/wb-dev.pub" ]; then
+  echo "SSH key not found at ~/.ssh/wb-dev.pub"
+  echo "Create or symlink your SSH public key:"
+  echo "  ssh-keygen -t ed25519 -f ~/.ssh/wb-dev -N ''"
+  exit 1
+fi
+echo "Starting cloud VM with SSH key injection..."
+echo "SSH: ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/wb-dev root@localhost"
+echo ""
 qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 \
   -nographic -serial mon:stdio \
-  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
+  -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+  -device virtio-net-pci,netdev=net0 \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio \
+  -fw_cfg name=opt/io.systemd.credentials/ssh.authorized_keys.root,file=$HOME/.ssh/wb-dev.pub
 '''
 
 [tasks."run:handheld"]
@@ -106,3 +119,42 @@ qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 \
   -display gtk,gl=on \
   -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
 '''
+
+# ===============================
+# Dev Boot (direct kernel, no BIB) — fast iteration
+# ===============================
+
+[tasks."dev-boot:cloud"]
+description = "Dev boot cloud variant (direct kernel, ~5s boot)"
+run = "just _dev-boot cloud localhost/whiteblossom-cloud latest"
+
+[tasks."dev-boot:iot"]
+description = "Dev boot IoT variant (direct kernel, ~5s boot)"
+run = "just _dev-boot iot localhost/whiteblossom-iot latest"
+# ===============================
+# SSH into running VM
+# ===============================
+
+[tasks."ssh:cloud"]
+description = "SSH into running cloud VM (port 2222, fw_cfg key)"
+run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $HOME/.ssh/wb-dev root@localhost"
+
+[tasks."ssh:workstation"]
+description = "SSH into running workstation VM (port 2222)"
+run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost"
+
+# ===============================
+# Tests
+# ===============================
+
+[tasks."test"]
+description = "Run all tests"
+depends = ["test:unit"]
+
+[tasks."test:unit"]
+description = "Run unit tests (mise task validation)"
+run = "bats tests/mise-tasks.bats"
+
+[tasks."test:e2e"]
+description = "Run end-to-end tests (requires built disk image)"
+run = "bats tests/run-cloud-e2e.bats"

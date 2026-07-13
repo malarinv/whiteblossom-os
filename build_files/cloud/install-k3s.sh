@@ -8,7 +8,7 @@ set -ouex pipefail
 echo "Installing k3s and ZeroTier..."
 
 # --- System dependencies ---
-dnf5 install -y \
+dnf5 install -y --setopt=sslverify=0 \
     systemd \
     NetworkManager \
     openssh-server \
@@ -21,11 +21,18 @@ dnf5 install -y \
 
 # --- ZeroTier ---
 echo "Installing ZeroTier..."
+cat > /etc/yum.repos.d/zerotier.repo <<'ZTREPO'
+[zerotier]
+name=ZeroTier, Inc. RPM Release Repository
+baseurl=https://download.zerotier.com/redhat/fc/$releasever
+enabled=1
+gpgcheck=0
+sslverify=0
+ZTREPO
 curl -s https://install.zerotier.com | bash || {
-    echo "ZeroTier install failed (no network during build). Installing from repo..."
-    dnf5 install -y zerotier-one || true
+    echo "ZeroTier install script failed, installing from repo..."
+    dnf5 install -y --setopt=sslverify=0 zerotier-one || true
 }
-
 # --- k3s binary ---
 echo "Installing k3s..."
 
