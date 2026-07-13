@@ -51,9 +51,8 @@ echo ""
 
 echo "Installing dev-boot dependencies..."
 # virtiofsd: host-side daemon for fast VM boot via direct kernel (dev-boot)
-if command -v rpm-ostree >/dev/null 2>&1; then
-    rpm-ostree install -y virtiofsd || echo "WARNING: virtiofsd install failed"
-elif command -v dnf5 >/dev/null 2>&1; then
+# Installed via dnf during container build, committed to OSTree
+if command -v dnf5 >/dev/null 2>&1; then
     dnf5 install -y virtiofsd || echo "WARNING: virtiofsd install failed"
 elif command -v dnf >/dev/null 2>&1; then
     dnf install -y virtiofsd || echo "WARNING: virtiofsd install failed"
