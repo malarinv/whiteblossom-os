@@ -1,51 +1,163 @@
+# =============================================================================
+# WhiteBlossom OS — Multi-Variant Containerfile
+#
+# Build a specific variant:
+#   podman build --target <variant> -t whiteblossom-<variant>:latest .
+#
+# Available variants: workstation, iot, cloud, handheld
+# =============================================================================
+
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
 COPY build_files /build_files
 COPY system_files /system_files
 
-# Base Image: Bazzite GNOME with NVIDIA Open Drivers
-# Provides: Gaming optimizations, GNOME desktop, NVIDIA open-source drivers
-# We'll layer KDE Plasma and DX developer tools on top
-FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable
+# =============================================================================
+# Variant: Workstation (default)
+# Dual-desktop gaming/development (GNOME + KDE + NVIDIA + DX tools)
+# Base: Bazzite GNOME with NVIDIA Open Drivers
+# =============================================================================
+FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable AS workstation
 
 ## Image Purpose
-# WhiteBlossom OS: Dual-desktop Linux OS with GNOME + KDE Plasma
-# - Primary base provides gaming optimizations and NVIDIA open drivers
-# - DX developer tools (IDEs, containers, runtimes) will be layered on top
-# - KDE Plasma will be added for multi-desktop support
-# - Supports simultaneous multi-user sessions with different desktop environments
+# WhiteBlossom OS Workstation: Dual-desktop Linux OS
+# - Gaming optimizations and NVIDIA open drivers from Bazzite
+# - DX developer tools (IDEs, containers, runtimes)
+# - KDE Plasma alongside GNOME for multi-desktop support
+# - Privacy-focused networking (Headscale, ZeroTier)
 
-### MODIFICATIONS
-
-# Run main build script to install all packages (DX tools, KDE Plasma, etc.)
+# Run shared build (base packages, system files, justfile registration, cleanup)
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
-    /ctx/build_files/build.sh
+    /ctx/build_files/shared/build.sh
 
 # Ensure /nix directory exists for Determinate Nix Installer at runtime
-# nix-filesystem RPM creates this with correct SELinux contexts, but
-# belt-and-suspenders: create it if the RPM is unavailable on this Fedora version
 RUN mkdir -p /nix
 
-# Copy system configuration files
-# Order matters: shared -> gnome -> kde (later files override earlier ones)
+# Run workstation build (DX tools, KDE, networking, system config)
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
-    mkdir -p /usr/share/doc/whiteblossom-os && \
-    if [ -d /ctx/system_files/shared ]; then \
-        cp -rT /ctx/system_files/shared / || true; \
-    fi && \
-    if [ -d /ctx/system_files/gnome ]; then \
-        cp -rT /ctx/system_files/gnome / || true; \
-    fi && \
-    if [ -d /ctx/system_files/kde ]; then \
-        cp -rT /ctx/system_files/kde / || true; \
-    fi
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/workstation/build.sh
 
 # Finalize OSTree commit
 RUN ostree container commit
 
-### LINTING
-## Verify final image and contents are correct.
+# Verify final image
+RUN bootc container lint
+
+
+# =============================================================================
+# Variant: IoT
+# Minimal headless build for Raspberry Pi / Rock5B
+# Base: Fedora Bootc (minimal, no desktop)
+# =============================================================================
+FROM quay.io/fedora/fedora-bootc:44 AS iot
+
+## Image Purpose
+# WhiteBlossom OS IoT: Headless embedded OS
+# - Minimal package set for resource-constrained devices
+# - SSH access, serial console, GPIO support
+# - NetworkManager for wireless connectivity
+# - Cockpit for remote management
+
+# Run shared build
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/shared/build.sh
+
+# Run IoT build
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/iot/build.sh
+
+# Finalize OSTree commit
+RUN ostree container commit
+
+# Verify final image
+RUN bootc container lint
+
+
+# =============================================================================
+# Variant: Cloud
+# Kubernetes cluster node with k3s
+# Base: Fedora Bootc (minimal, headless — same as IoT)
+# =============================================================================
+FROM quay.io/fedora/fedora-bootc:44 AS cloud
+
+## Image Purpose
+# WhiteBlossom OS Cloud: Kubernetes cluster node
+# - k3s lightweight Kubernetes distribution
+# - ZeroTier for cluster networking
+# - Container runtime stack (containerd, runc via k3s)
+# - Registration client for identity-based cluster join
+
+# Run shared build
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/shared/build.sh
+
+# Run cloud build
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/cloud/build.sh
+
+# Dev SSH key (only present in local builds, never in CI)
+COPY .ssh-dev.pub /tmp/dev-key.pub
+RUN if [ -s /tmp/dev-key.pub ]; then \
+      mkdir -p /usr/lib/ssh/authorized_keys.d && \
+      cp /tmp/dev-key.pub /usr/lib/ssh/authorized_keys.d/root && \
+      chmod 0600 /usr/lib/ssh/authorized_keys.d/root && \
+      echo "Dev SSH key installed"; \
+    fi && rm -f /tmp/dev-key.pub
+# Finalize OSTree commit
+RUN ostree container commit
+
+# Verify final image
+RUN bootc container lint
+
+
+# =============================================================================
+# Variant: Handheld
+# Gaming handheld with Gamescope session (Steam Deck-like)
+# Base: Bazzite (provides gaming optimizations + NVIDIA)
+# =============================================================================
+FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable AS handheld
+
+## Image Purpose
+# WhiteBlossom OS Handheld: Gaming handheld OS
+# - Gamescope session for console-like experience
+# - Steam integration and gaming optimizations
+# - Input device mapping for handheld controllers
+# - Power management for battery-powered devices
+
+# Run shared build
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/shared/build.sh
+
+# Run handheld build
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build_files/handheld/build.sh
+
+# Finalize OSTree commit
+RUN ostree container commit
+
+# Verify final image
 RUN bootc container lint

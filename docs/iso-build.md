@@ -4,33 +4,101 @@ This document covers how WhiteBlossom OS ISOs are built, the design decisions be
 
 ## Overview
 
-The ISO build pipeline produces a **self-contained Anaconda installer ISO** that embeds the full WhiteBlossom OS container image directly into the installation media. The installer does not require network access — the entire OS image is served from the ISO's squashfs volume at install time.
+WhiteBlossom OS supports multiple variants built from a single `Containerfile` using multi-stage targets. Each variant produces a separate container image that can be built into bootable disk images (QCOW2, raw, ISO).
+
+### Variants
+
+| Variant | Base Image | Use Case |
+|---------|-----------|----------|
+| **workstation** | Bazzite GNOME NVIDIA | Dual-desktop gaming/development |
+| **iot** | Fedora Bootc 44 | Raspberry Pi / Rock5B headless |
+| **cloud** | Bazzite GNOME NVIDIA | Kubernetes cluster nodes |
+| **handheld** | Bazzite GNOME NVIDIA | Gaming handheld (Gamescope) |
 
 ### Pipeline
 
 ```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Containerfile (multi-stage targets)                                 │
+│                                                                      │
+│  FROM scratch AS ctx                                                 │
+│  COPY build_files /build_files                                       │
+│  COPY system_files /system_files                                     │
+│                                                                      │
+│  ┌─────────────┐ ┌─────────┐ ┌──────┐ ┌─────────┐                  │
+│  │ workstation  │ │   iot   │ │cloud│ │handheld │                  │
+│  │ (bazzite)   │ │ (fedora)│ │(baz.)│ │ (baz.)  │                  │
+│  └──────┬──────┘ └────┬────┘ └──┬───┘ └────┬────┘                  │
+│         │              │         │           │                        │
+│         ▼              ▼         ▼           ▼                        │
+│  ghcr.io/...-workstation    ...-iot     ...-cloud  ...-handheld      │
+└──────────────────────────────────────────────────────────────────────┘
+              │
+              ▼
 ┌──────────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
 │  build.yml       │     │  Containerfile.iso   │     │  build-disk.yml     │
-│  (main image)    │────▶│  (Anaconda overlay)  │────▶│  (image-builder)    │
+│  (variant matrix)│────▶│  (Anaconda overlay)  │────▶│  (variant matrix)   │
 │  ghcr.io/...     │     │  +graphical deps     │     │  anaconda-iso       │
 └──────────────────┘     └──────────────────────┘     └─────────────────────┘
 ```
-
-1. **`build.yml`** builds the main WhiteBlossom OS container image and pushes to GHCR.
-2. **`Containerfile.iso`** layers Anaconda and graphical installer dependencies on top of the main image.
-3. **`build-disk.yml`** uses `osbuild/image-builder-cli` to produce a self-contained `anaconda-iso`.
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
+| `Containerfile` | Multi-stage build with variant targets |
 | `Containerfile.iso` | ISO-specific overlay: Anaconda, graphical deps, build tools |
-| `iso_config/iso.yaml` | GRUB boot entry and kernel parameters |
+| `iso_config/workstation.yaml` | GRUB boot entry for workstation |
+| `iso_config/iot.yaml` | GRUB boot entry for IoT (serial console) |
+| `iso_config/cloud.yaml` | GRUB boot entry for cloud |
+| `iso_config/handheld.yaml` | GRUB boot entry for handheld |
 | `iso_config/interactive-defaults.ks` | Anaconda kickstart with `bootc install` source reference |
 | `iso_config/anaconda-shell.conf` | logind config for Anaconda shell session |
-| `.github/workflows/build-disk.yml` | CI pipeline for building QCOW2 and ISO artifacts |
+| `disk_config/workstation.toml` | Disk layout for workstation (20 GiB) |
+| `disk_config/iot.toml` | Disk layout for IoT (4 GiB) |
+| `disk_config/cloud.toml` | Disk layout for cloud (8 GiB) |
+| `disk_config/handheld.toml` | Disk layout for handheld (32 GiB) |
+| `.github/workflows/build.yml` | CI pipeline: builds container images per variant |
+| `.github/workflows/build-disk.yml` | CI pipeline: builds QCOW2 and ISO per variant |
 
-## Self-Contained ISO
+## Building
+
+### Build a Specific Variant
+
+```bash
+# Build workstation image
+podman build --target workstation -t whiteblossom-workstation:latest .
+
+# Build IoT image
+podman build --target iot -t whiteblossom-iot:latest .
+
+# Build cloud image
+podman build --target cloud -t whiteblossom-cloud:latest .
+
+# Build handheld image
+podman build --target handheld -t whiteblossom-handheld:latest .
+```
+
+### Build with Justfile
+
+```bash
+# Build workstation (default)
+just build
+
+# Build specific variant
+just build workstation
+just build iot
+just build cloud
+just build handheld
+
+# Build QCOW2 for a variant
+just build-qcow2 workstation
+
+# Build ISO for a variant
+just build-iso workstation
+```
+
+### Self-Contained ISO
 
 The ISO is built using the `anaconda-iso` image type (not `bootc-generic-iso`). This distinction is critical:
 
@@ -39,11 +107,11 @@ The ISO is built using the `anaconda-iso` image type (not `bootc-generic-iso`). 
 | `bootc-generic-iso` | Generic installer; pulls container image from registry at install time | **Yes** |
 | `anaconda-iso` | Embeds the full container filesystem into the ISO's squashfs volume | **No** |
 
-With `anaconda-iso`, image-builder resolves the local container reference (`localhost/whiteblossom-iso:latest`) and translates all filesystem layers into an embedded squashfs payload. When Anaconda runs, it reads the image from local media instead of reaching out to a registry.
+With `anaconda-iso`, image-builder resolves the local container reference and translates all filesystem layers into an embedded squashfs payload. When Anaconda runs, it reads the image from local media instead of reaching out to a registry.
 
 ### Why `inst.text` Was Removed
 
-Previously, `iso_config/iso.yaml` included `inst.text` in the GRUB kernel parameters. This flag explicitly forces Anaconda into text/CLI mode, bypassing the graphical installer entirely. The CLI mode presents two options:
+Previously, `iso_config/workstation.yaml` included `inst.text` in the GRUB kernel parameters. This flag explicitly forces Anaconda into text/CLI mode, bypassing the graphical installer entirely. The CLI mode presents two options:
 
 - Continue in text mode (non-interactive)
 - Use RDP-based remote GUI session
@@ -123,8 +191,8 @@ qemu-system-x86_64 \
 The `interactive-defaults.ks` file configures Anaconda's default behavior:
 
 ```ks
-bootc --source-imgref registry:ghcr.io/malarinv/whiteblossom-os:latest \
-      --target-imgref ghcr.io/malarinv/whiteblossom-os:latest
+bootc --source-imgref registry:ghcr.io/malarinv/whiteblossom-os-workstation:latest \
+      --target-imgref ghcr.io/malarinv/whiteblossom-os-workstation:latest
 ```
 
 ### Why the source-imgref Points to a Registry
@@ -133,11 +201,44 @@ For self-contained ISOs built with `anaconda-iso`, the `--source-imgref` should 
 
 Do **not** hardcode paths like `/mnt/install/...` in `--source-imgref`.
 
+## Variant-Specific Notes
+
+### Workstation
+
+- Uses Bazzite GNOME NVIDIA Open drivers as base
+- Dual-desktop: GNOME + KDE Plasma
+- DX developer tools (IDEs, containers, runtimes)
+- Gaming optimizations and NVIDIA support
+- Privacy-focused networking (Headscale, ZeroTier)
+
+### IoT
+
+- Uses Fedora Bootc 44 as base (minimal, no desktop)
+- Serial console enabled (ttyAMA0 for RPi, ttyUSB0 for USB adapters)
+- Headless multi-user target
+- SSH and NetworkManager
+- Cockpit for remote management
+
+### Cloud
+
+- Uses Bazzite base for container runtime stack
+- k3s lightweight Kubernetes distribution
+- Cluster networking and storage
+- Multi-user target (no graphical desktop)
+
+### Handheld
+
+- Uses Bazzite base for gaming optimizations
+- Gamescope session for console-like experience
+- Steam integration
+- Input device mapping for handheld controllers
+- Power management for battery devices
+
 ## Troubleshooting
 
 ### Anaconda boots to text/CLI mode
 
-1. **Check `iso_config/iso.yaml`** — Ensure `inst.text` is **not** in the kernel parameters. This flag forces text mode.
+1. **Check `iso_config/workstation.yaml`** — Ensure `inst.text` is **not** in the kernel parameters. This flag forces text mode.
 2. **Check graphical packages** — Verify `anaconda-gui`, `gnome-kiosk`, and `mesa-dri-drivers` are installed in the ISO overlay.
 3. **Check QEMU device** — Ensure you're using `virtio-vga-gl` (not `virtio-vga` or `cirrus-vga`).
 
@@ -162,9 +263,13 @@ This error means Anaconda initialized the storage framework but failed to fetch 
 ## Build Commands
 
 ```bash
+# Build the container image (variant-specific)
+podman build --target workstation -t whiteblossom-workstation:latest .
+podman build --target iot -t whiteblossom-iot:latest .
+
 # Build the ISO overlay image
 sudo podman build \
-  --build-arg BASE_IMAGE="ghcr.io/malarinv/whiteblossom-os:latest" \
+  --build-arg BASE_IMAGE="ghcr.io/malarinv/whiteblossom-os-workstation:latest" \
   -t localhost/whiteblossom-iso:latest \
   -f Containerfile.iso .
 

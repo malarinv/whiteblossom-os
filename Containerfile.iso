@@ -35,7 +35,7 @@ RUN mkdir -p /boot/efi && cp -ra /usr/lib/efi/*/*/EFI /boot/efi
 # --- ISO configuration ---
 RUN mkdir -p /usr/lib/image-builder/bootc
 
-COPY iso_config/iso.yaml /usr/lib/image-builder/bootc/iso.yaml
+COPY iso_config/workstation.yaml /usr/lib/image-builder/bootc/iso.yaml
 
 # --- Anaconda kickstart defaults ---
 COPY iso_config/interactive-defaults.ks /usr/share/anaconda/interactive-defaults.ks

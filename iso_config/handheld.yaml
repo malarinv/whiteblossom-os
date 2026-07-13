@@ -1,0 +1,6 @@
+label: "WhiteBlossom-Handheld"
+grub2:
+  entries:
+    - name: "WhiteBlossom OS Handheld (Gamescope)"
+      linux: "/images/pxeboot/vmlinuz console=tty0 selinux=0 rhgb quiet"
+      initrd: "/images/pxeboot/initrd.img"

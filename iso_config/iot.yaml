@@ -1,0 +1,9 @@
+label: "WhiteBlossom-IoT"
+grub2:
+  entries:
+    - name: "WhiteBlossom OS IoT (Serial Console)"
+      linux: "/images/pxeboot/vmlinuz console=ttyAMA0,115200n8 console=tty0 selinux=0 quiet"
+      initrd: "/images/pxeboot/initrd.img"
+    - name: "WhiteBlossom OS IoT (USB Console)"
+      linux: "/images/pxeboot/vmlinuz console=ttyUSB0,115200n8 console=tty0 selinux=0 quiet"
+      initrd: "/images/pxeboot/initrd.img"

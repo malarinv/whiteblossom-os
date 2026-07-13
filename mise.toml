@@ -1,9 +1,160 @@
+# mise configuration for WhiteBlossom OS
+# https://mise.jdx.dev
+#
+# Quick start:
+#   mise install          # Install tools
+#   mise run <task>       # Run a task
+#   mise tasks            # List all available tasks
+
 [tools]
 "github:SurgeDM/Surge" = "latest"
+"npm:bats" = "latest"
 
-[tasks.iso]
-description = "Launch the whiteblossom OS ISO in QEMU with graphical installer"
-run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio -cdrom dist/bootc-bazzite-44-bootc-generic-iso-x86_64.iso -boot d"
-[tasks.boot]
-description = "Boot installed WhiteBlossom OS from disk (post-installation)"
-run = "qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 -device virtio-vga-gl,blob=on,hostmem=4G,venus=true -display gtk,gl=on,show-cursor=on -drive file=dist/test-disk.qcow2,format=qcow2,if=virtio"
+# ===============================
+# Build (container image)
+# ===============================
+
+[tasks."build:workstation"]
+description = "Build workstation container image"
+run = "just build workstation localhost/whiteblossom-os latest"
+
+[tasks."build:iot"]
+description = "Build IoT container image"
+run = "just build iot localhost/whiteblossom-iot latest"
+
+[tasks."build:cloud"]
+description = "Build cloud container image"
+run = "just build cloud localhost/whiteblossom-cloud latest"
+
+[tasks."build:handheld"]
+description = "Build handheld container image"
+run = "just build handheld localhost/whiteblossom-handheld latest"
+
+# ===============================
+# Disk (QCOW2 / RAW conversion)
+# ===============================
+
+[tasks."disk:workstation"]
+description = "Build workstation QCOW2 disk image"
+run = "just build-qcow2 workstation localhost/whiteblossom-os latest"
+
+[tasks."disk:iot"]
+description = "Build IoT raw disk image"
+run = "just build-raw iot localhost/whiteblossom-iot latest"
+
+[tasks."disk:cloud"]
+description = "Build cloud QCOW2 disk image"
+run = "just build-qcow2 cloud localhost/whiteblossom-cloud latest"
+
+[tasks."disk:handheld"]
+description = "Build handheld QCOW2 disk image"
+run = "just build-qcow2 handheld localhost/whiteblossom-handheld latest"
+
+# ===============================
+# Run (QEMU) — requires disk to be built first
+# ===============================
+
+[tasks."run:workstation"]
+description = "Run workstation in QEMU (graphical, GPU)"
+run = '''
+if [ ! -f output/qcow2/disk.qcow2 ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:workstation"
+  exit 1
+fi
+qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 \
+  -device virtio-vga-gl,blob=on,hostmem=4G,venus=true \
+  -display gtk,gl=on \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
+'''
+
+[tasks."run:iot"]
+description = "Run IoT in QEMU (ARM, headless)"
+run = '''
+if [ ! -f output/raw/disk.raw ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:iot"
+  exit 1
+fi
+qemu-system-aarch64 -m 4096 -M virt -cpu cortex-a72 -smp 2 \
+  -display none -serial mon:stdio \
+  -drive file=output/raw/disk.raw,format=raw,if=virtio
+'''
+
+[tasks."run:cloud"]
+description = "Run cloud in QEMU (headless, serial + SSH key injection)"
+run = '''
+if [ ! -f output/qcow2/disk.qcow2 ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:cloud"
+  exit 1
+fi
+if [ ! -f "$HOME/.ssh/wb-dev.pub" ]; then
+  echo "SSH key not found at ~/.ssh/wb-dev.pub"
+  echo "Create or symlink your SSH public key:"
+  echo "  ssh-keygen -t ed25519 -f ~/.ssh/wb-dev -N ''"
+  exit 1
+fi
+echo "Starting cloud VM with SSH key injection..."
+echo "SSH: ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/wb-dev root@localhost"
+echo ""
+qemu-system-x86_64 -m 4096 -enable-kvm -cpu host -smp 2 \
+  -nographic -serial mon:stdio \
+  -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+  -device virtio-net-pci,netdev=net0 \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio \
+  -fw_cfg name=opt/io.systemd.credentials/ssh.authorized_keys.root,file=$HOME/.ssh/wb-dev.pub
+'''
+
+[tasks."run:handheld"]
+description = "Run handheld in QEMU (graphical)"
+run = '''
+if [ ! -f output/qcow2/disk.qcow2 ]; then
+  echo "Disk not found. Build it first:"
+  echo "  mise run disk:handheld"
+  exit 1
+fi
+qemu-system-x86_64 -m 8192 -enable-kvm -cpu host -smp 4 \
+  -device virtio-vga-gl,blob=on,hostmem=4G,venus=true \
+  -display gtk,gl=on \
+  -drive file=output/qcow2/disk.qcow2,format=qcow2,if=virtio
+'''
+
+# ===============================
+# Dev Boot (direct kernel, no BIB) — fast iteration
+# ===============================
+
+[tasks."dev-boot:cloud"]
+description = "Dev boot cloud variant (direct kernel, ~5s boot)"
+run = "just _dev-boot cloud localhost/whiteblossom-cloud latest"
+
+[tasks."dev-boot:iot"]
+description = "Dev boot IoT variant (direct kernel, ~5s boot)"
+run = "just _dev-boot iot localhost/whiteblossom-iot latest"
+# ===============================
+# SSH into running VM
+# ===============================
+
+[tasks."ssh:cloud"]
+description = "SSH into running cloud VM (port 2222, fw_cfg key)"
+run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $HOME/.ssh/wb-dev root@localhost"
+
+[tasks."ssh:workstation"]
+description = "SSH into running workstation VM (port 2222)"
+run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost"
+
+# ===============================
+# Tests
+# ===============================
+
+[tasks."test"]
+description = "Run all tests"
+depends = ["test:unit"]
+
+[tasks."test:unit"]
+description = "Run unit tests (mise task validation)"
+run = "bats tests/mise-tasks.bats"
+
+[tasks."test:e2e"]
+description = "Run end-to-end tests (requires built disk image)"
+run = "bats tests/run-cloud-e2e.bats"

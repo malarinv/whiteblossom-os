@@ -1,0 +1,87 @@
+#!/bin/bash
+# /usr/local/bin/k3s-config-write — Write k3s agent config from registration response
+# Reads /etc/whiteblossom/secrets/registration-response.json
+# Writes /etc/rancher/k3s/config.yaml and token file.
+# Idempotent: skips if config already exists.
+
+set -euo pipefail
+
+RESPONSE_FILE="/etc/whiteblossom/secrets/registration-response.json"
+K3S_CONFIG="/etc/rancher/k3s/config.yaml"
+K3S_TOKEN_FILE="/var/lib/rancher/k3s/server/token"
+
+if [ ! -f "$RESPONSE_FILE" ]; then
+    echo "ERROR: Registration response not found at $RESPONSE_FILE"
+    exit 1
+fi
+
+# --- Extract values from registration response ---
+K3S_TOKEN=$(python3 -c "import sys,json; print(json.load(open('$RESPONSE_FILE'))['k3s_token'])")
+SERVER_URL=$(python3 -c "import sys,json; print(json.load(open('$RESPONSE_FILE'))['server_url'])")
+ZT_NETWORK=$(python3 -c "import sys,json; print(json.load(open('$RESPONSE_FILE'))['zerotier_network'])")
+NODE_NAME=$(hostname)
+
+# --- Wait for ZeroTier IP ---
+echo "Waiting for ZeroTier IP on network $ZT_NETWORK..."
+ZT_IFACE=""
+for i in $(seq 1 60); do
+    ZT_IFACE=$(zerotier-cli listnetworks -j | python3 -c "
+import sys,json
+nets = json.load(sys.stdin)
+for n in nets:
+    if n.get('nwid') == '$ZT_NETWORK':
+        print(n.get('portDevice',''))
+        break
+" 2>/dev/null || true)
+    [ -n "$ZT_IFACE" ] && break
+    sleep 1
+done
+
+if [ -z "$ZT_IFACE" ]; then
+    echo "ERROR: ZeroTier interface not found"
+    exit 1
+fi
+
+ZT_IP=""
+for i in $(seq 1 60); do
+    ZT_IP=$(ip -4 addr show "$ZT_IFACE" 2>/dev/null | grep -oP 'inet \K[\d.]+' | head -1)
+    [ -n "$ZT_IP" ] && break
+    sleep 1
+done
+
+if [ -z "$ZT_IP" ]; then
+    echo "ERROR: ZeroTier IP not acquired"
+    exit 1
+fi
+
+EXTERNAL_IP=$(curl -sf --max-time 5 https://api.ipify.org || echo "$ZT_IP")
+
+# --- Write k3s token file ---
+mkdir -p /var/lib/rancher/k3s/server
+echo "$K3S_TOKEN" > "$K3S_TOKEN_FILE"
+chmod 0600 "$K3S_TOKEN_FILE"
+
+# --- Write k3s config ---
+mkdir -p /etc/rancher/k3s
+cat > "$K3S_CONFIG" <<EOF
+server: "$SERVER_URL"
+token: "$K3S_TOKEN"
+node-ip: "$ZT_IP"
+node-name: "$NODE_NAME"
+flannel-iface: "$ZT_IFACE"
+node-external-ip: "$EXTERNAL_IP"
+write-kubeconfig-mode: "0644"
+disable:
+  - servicelb
+  - traefik
+EOF
+
+# --- Append labels from registration response ---
+python3 -c "
+import sys, json
+labels = json.load(open('$RESPONSE_FILE')).get('node_labels', [])
+for l in labels:
+    print(f'  - \"{l}\"')
+" >> "$K3S_CONFIG"
+
+echo "k3s config written for node $NODE_NAME at $ZT_IP"

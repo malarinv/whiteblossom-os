@@ -1,0 +1,66 @@
+#!/bin/bash
+# /usr/local/bin/wb-register — WhiteBlossom node registration client
+# Generates identity, registers with service, writes secrets.
+# Idempotent: skips if already registered.
+
+set -euo pipefail
+
+IDENTITY_DIR="/etc/whiteblossom/node-identity"
+SECRET_DIR="/etc/whiteblossom/secrets"
+REGISTRATION_URL="${WB_REGISTRATION_URL:-https://172.28.28.28:9443}"
+
+# --- 1. Generate identity if first boot ---
+if [ ! -f "$IDENTITY_DIR/node.key" ]; then
+    mkdir -p "$IDENTITY_DIR"
+    openssl genpkey -algorithm Ed25519 -out "$IDENTITY_DIR/node.key" 2>/dev/null
+    openssl pkey -in "$IDENTITY_DIR/node.key" -pubout \
+        -out "$IDENTITY_DIR/node.pub" 2>/dev/null
+    chmod 0600 "$IDENTITY_DIR/node.key"
+    echo "Generated new node identity"
+fi
+
+# --- 2. Read hardware UUID ---
+HW_UUID=$(cat /sys/class/dmi/id/product_uuid 2>/dev/null || echo "unknown")
+NODE_NAME=$(hostname)
+
+# --- 3. Build and sign payload ---
+TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+PUB_KEY=$(cat "$IDENTITY_DIR/node.pub")
+
+PAYLOAD=$(cat <<EOF
+{
+  "public_key": "$PUB_KEY",
+  "hardware_uuid": "$HW_UUID",
+  "node_name": "$NODE_NAME",
+  "timestamp": "$TIMESTAMP"
+}
+EOF
+)
+
+SIGNATURE=$(echo -n "$PAYLOAD" | \
+    openssl dgst -sha256 -sign "$IDENTITY_DIR/node.key" | \
+    base64 -w0)
+
+# --- 4. Register ---
+RESPONSE=$(curl -sf --max-time 30 \
+    -X POST "$REGISTRATION_URL/v1/register" \
+    -H "Content-Type: application/json" \
+    -d "{\"payload\": $PAYLOAD, \"signature\": \"$SIGNATURE\"}")
+
+STATUS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+
+if [ "$STATUS" != "approved" ]; then
+    echo "Registration denied: $RESPONSE"
+    exit 1
+fi
+
+# --- 5. Write secrets ---
+mkdir -p "$SECRET_DIR"
+echo "$RESPONSE" > "$SECRET_DIR/registration-response.json"
+chmod 0600 "$SECRET_DIR/registration-response.json"
+
+# --- 6. Mark as registered ---
+touch /etc/whiteblossom/.registered
+chmod 0600 /etc/whiteblossom/.registered
+
+echo "Registration successful"

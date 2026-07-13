@@ -7,3 +7,4 @@ _build-*/**
 bazzite/
 bazzite-dx/
 dist/
+.ssh-dev.pub
