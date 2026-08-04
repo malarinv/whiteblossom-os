@@ -162,7 +162,8 @@ jobs:
           for tag in ${{ steps.metadata.outputs.tag-names }}; do
             buildah tag \
               "${{ steps.registry_case.outputs.lowercase }}/${{ steps.image_case.outputs.lowercase }}:${tag}" \
-              "${{ steps.registry_case.outputs.lowercase }}/${{ matrix.secondary_image }}:${tag}"
+              "${{ steps.registry_case.outputs.lowercase }}/${{ matrix.secondary_image }}:${tag}" \
+              "${{ matrix.secondary_image }}:${tag}"
           done
 
       - name: Push secondary image to GHCR
