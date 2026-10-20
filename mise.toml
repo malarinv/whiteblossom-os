@@ -7,8 +7,15 @@
 #   mise tasks            # List all available tasks
 
 [tools]
-"github:SurgeDM/Surge" = "latest"
-"npm:bats" = "latest"
+# Both were `latest`. Exact now and verified by running the tool, not by
+# trusting the string: Surge v0.12.2, Bats 1.13.0.
+#
+# The github: backend verifies Surge against GitHub attestations, which needs
+# the GitHub API — on an unauthenticated egress IP that hits the 60/hour limit
+# and the install fails with a 403 that names no tool. Set GITHUB_TOKEN before
+# `mise install` if a build here fails that way.
+"github:SurgeDM/Surge" = "0.12.2"
+"npm:bats" = "1.13.0"
 
 # ===============================
 # Build (container image)
@@ -142,6 +149,10 @@ run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -
 [tasks."ssh:workstation"]
 description = "SSH into running workstation VM (port 2222)"
 run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost"
+
+[tasks."ssh:dev-boot:cloud"]
+description = "SSH into running dev-boot cloud VM (port 2222, fw_cfg key)"
+run = "ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $HOME/.ssh/wb-dev root@localhost"
 
 # ===============================
 # Tests
