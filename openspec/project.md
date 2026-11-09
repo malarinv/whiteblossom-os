@@ -55,8 +55,8 @@ WhiteBlossom OS is a custom bootc-based immutable operating system image built o
 - Use multi-stage builds when referencing external files
 - Mount build files as bind mounts to avoid copying into final image
 - Use cache mounts for `/var/cache`, `/var/log` to speed up builds
-- Always run `ostree container commit` after modifications
-- End with `bootc container lint` to verify image integrity
+- End with `RUN bootc container lint` as the final build step to verify image integrity
+  (`ostree container commit` is deprecated and fails on bootc-native bases — never add it)
 - Pull base images with `--pull=newer` to ensure updates
 
 **File Organization:**
@@ -89,9 +89,8 @@ WhiteBlossom OS is a custom bootc-based immutable operating system image built o
 1. Start from Universal Blue base image
 2. Mount build scripts without copying (scratch stage + bind mount)
 3. Execute customizations via `build.sh`
-4. Commit changes with `ostree container commit`
-5. Validate with `bootc container lint`
-6. Optionally convert to bootable images (QCOW2/RAW/ISO)
+4. Validate with `bootc container lint`
+5. Optionally convert to bootable images (QCOW2/RAW/ISO)
 
 ### Testing Strategy
 
