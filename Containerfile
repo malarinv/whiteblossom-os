@@ -43,9 +43,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build_files/workstation/build.sh
 
-# Finalize OSTree commit
-RUN ostree container commit
-
 # Verify final image
 RUN bootc container lint
 
@@ -77,9 +74,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build_files/iot/build.sh
-
-# Finalize OSTree commit
-RUN ostree container commit
 
 # Verify final image
 RUN bootc container lint
@@ -121,8 +115,6 @@ RUN if [ -s /tmp/dev-key.pub ]; then \
       chmod 0600 /usr/lib/ssh/authorized_keys.d/root && \
       echo "Dev SSH key installed"; \
     fi && rm -f /tmp/dev-key.pub
-# Finalize OSTree commit
-RUN ostree container commit
 
 # Verify final image
 RUN bootc container lint
@@ -155,9 +147,6 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build_files/handheld/build.sh
-
-# Finalize OSTree commit
-RUN ostree container commit
 
 # Verify final image
 RUN bootc container lint

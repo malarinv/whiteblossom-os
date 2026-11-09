@@ -67,5 +67,3 @@ RUN mkdir -p /etc/systemd/user/pipewire.service.d/ && \
     printf '[Unit]\nConditionUser=\n' > /etc/systemd/user/pipewire.service.d/allowroot.conf
 RUN mkdir -p /etc/systemd/user/pipewire.socket.d/ && \
     printf '[Unit]\nConditionUser=\n' > /etc/systemd/user/pipewire.socket.d/allowroot.conf
-
-RUN ostree container commit
