@@ -60,6 +60,7 @@ chmod 0755 /usr/lib/omniphony/bridges/*.so
 
 echo "Installing jellyfin-mpv-shim ${SHIM_VERSION}..."
 dnf5 install -y python3-pip
+mkdir -p /usr/local/lib/python3.15 /usr/local/bin
 python3 -m pip install --prefix /usr/local "jellyfin-mpv-shim==${SHIM_VERSION}"
 
 echo "Omniphony binaural playback stack installation complete!"
