@@ -115,6 +115,40 @@ echo "✓ Antigravity IDE installation (if present) complete"
 echo ""
 
 # ============================================================================
+# STEP 4.5: Install Omniphony Binaural Playback Stack
+# ============================================================================
+
+echo "Step 4.5/5: Installing Omniphony binaural playback stack..."
+echo "=========================================================="
+
+if [ -f "${SCRIPT_DIR}/install-omniphony-stack.sh" ]; then
+    bash "${SCRIPT_DIR}/install-omniphony-stack.sh"
+else
+    echo "WARNING: install-omniphony-stack.sh not found. Skipping."
+fi
+
+echo ""
+echo "✓ Omniphony binaural playback stack installation (if present) complete"
+echo ""
+
+# ============================================================================
+# STEP 4.6: Install Stremio Omniphony Flatpak (prebuilt artifact)
+# ============================================================================
+
+echo "Step 4.6/5: Installing net.whiteblossom.Stremio flatpak..."
+echo "=========================================================="
+
+if [ -f "${SCRIPT_DIR}/install-stremio-omniphony.sh" ]; then
+    bash "${SCRIPT_DIR}/install-stremio-omniphony.sh"
+else
+    echo "WARNING: install-stremio-omniphony.sh not found. Skipping."
+fi
+
+echo ""
+echo "✓ Stremio Omniphony flatpak installation (if present) complete"
+echo ""
+
+# ============================================================================
 # STEP 5: Configure System Services and Security
 # ============================================================================
 
@@ -141,6 +175,18 @@ echo ""
 # Apply Variant System Files
 # ============================================================================
 
+echo "Applying opt-in feature scopes (system_files/feature-scopes)..."
+if [ -f "/ctx/system_files/workstation/.scopes" ]; then
+    while read -r scope; do
+        [ -n "$scope" ] || continue
+        if [ -d "/ctx/system_files/feature-scopes/${scope}" ]; then
+            cp -rvT "/ctx/system_files/feature-scopes/${scope}" / || true
+        else
+            echo "WARNING: feature scope '${scope}' has no directory under /ctx/system_files/feature-scopes/. Skipping."
+        fi
+    done < "/ctx/system_files/workstation/.scopes"
+fi
+
 echo "Applying workstation system files..."
 if [ -d "/ctx/system_files/workstation" ] && find /ctx/system_files/workstation -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
     cp -rvT /ctx/system_files/workstation / || true
@@ -162,6 +208,8 @@ echo "  ✓ Multi-desktop session support"
 echo "  ✓ Security hardening (SELinux, firewall)"
 echo "  ✓ Privacy-focused networking (Headscale, ZeroTier)"
 echo "  ✓ Antigravity IDE (AI-powered development environment)"
+echo "  ✓ Omniphony binaural playback (mpv-omniphony + bridges + Jellyfin shim)"
+echo "  ✓ Stremio with host Atmos hand-off (net.whiteblossom.Stremio)"
 echo ""
 echo "Next steps:"
 echo "  1. The Containerfile will commit these changes to OSTree"

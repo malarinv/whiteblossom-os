@@ -1,0 +1,7 @@
+render:
+  binaural:
+    output_mode: binaural
+  bridge_paths:
+    - /usr/lib/omniphony/bridges/libharletty_dolby_bridge.so
+    - /usr/lib/omniphony/bridges/libharletty_dts_bridge.so
+    - /usr/lib/omniphony/bridges/libharletty_iamf_bridge.so

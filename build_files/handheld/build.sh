@@ -59,8 +59,56 @@ echo "✓ Gamescope configuration complete"
 echo ""
 
 # ============================================================================
+# STEP 3: Install Omniphony Binaural Playback Stack
+# ============================================================================
+
+echo "Step 3: Installing Omniphony binaural playback stack..."
+echo "======================================================="
+
+if [ -f "${SCRIPT_DIR}/install-omniphony-stack.sh" ]; then
+    bash "${SCRIPT_DIR}/install-omniphony-stack.sh"
+else
+    echo "WARNING: install-omniphony-stack.sh not found (shared with workstation tree). Skipping."
+fi
+
+echo ""
+echo "✓ Omniphony binaural playback stack installation (if present) complete"
+echo ""
+
+# ============================================================================
+# STEP 4: Install Stremio Omniphony Flatpak (prebuilt artifact)
+# ============================================================================
+
+echo "Step 4: Installing net.whiteblossom.Stremio flatpak..."
+echo "======================================================"
+
+if [ -f "${SCRIPT_DIR}/install-stremio-omniphony.sh" ]; then
+    bash "${SCRIPT_DIR}/install-stremio-omniphony.sh"
+elif [ -f "/ctx/build_files/workstation/install-stremio-omniphony.sh" ]; then
+    bash "/ctx/build_files/workstation/install-stremio-omniphony.sh"
+else
+    echo "WARNING: install-stremio-omniphony.sh not found. Skipping."
+fi
+
+echo ""
+echo "✓ Stremio Omniphony flatpak installation (if present) complete"
+echo ""
+
+# ============================================================================
 # Apply Variant System Files
 # ============================================================================
+
+echo "Applying opt-in feature scopes (system_files/feature-scopes)..."
+if [ -f "/ctx/system_files/handheld/.scopes" ]; then
+    while read -r scope; do
+        [ -n "$scope" ] || continue
+        if [ -d "/ctx/system_files/feature-scopes/${scope}" ]; then
+            cp -rvT "/ctx/system_files/feature-scopes/${scope}" / || true
+        else
+            echo "WARNING: feature scope '${scope}' has no directory under /ctx/system_files/feature-scopes/. Skipping."
+        fi
+    done < "/ctx/system_files/handheld/.scopes"
+fi
 
 echo "Applying handheld system files..."
 if [ -d "/ctx/system_files/handheld" ] && find /ctx/system_files/handheld -mindepth 1 -print -quit 2>/dev/null | grep -q .; then
@@ -75,6 +123,10 @@ echo ""
 echo "=========================================="
 echo "Handheld Build Complete!"
 echo "=========================================="
+echo ""
+echo "Installed Components:"
+echo "  ✓ Omniphony binaural playback (mpv-omniphony + bridges + Jellyfin shim)"
+echo "  ✓ Stremio with host Atmos hand-off (net.whiteblossom.Stremio)"
 echo ""
 echo "Next steps:"
 echo "  1. The Containerfile will commit these changes to OSTree"

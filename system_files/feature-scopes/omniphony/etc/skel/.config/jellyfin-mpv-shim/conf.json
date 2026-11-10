@@ -1,0 +1,7 @@
+{
+  "mpv_ext": true,
+  "mpv_ext_path": "/usr/bin/mpv-omniphony",
+  "mpv_ext_ipc": "/tmp/jellyfin-mpv-shim-ipc.sock",
+  "mpv_ext_start": true,
+  "mpv_ext_no_ovr": true
+}
