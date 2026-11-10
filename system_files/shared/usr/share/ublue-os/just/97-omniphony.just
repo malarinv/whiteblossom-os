@@ -109,9 +109,9 @@ stremio-omniphony-setup:
     echo "player path /app/bin/mpv-omniphony manually, and update this recipe's"
     echo "PATCH keys to match what Stremio wrote."
 
-# Verify the net.whiteblossom.Stremio sandbox carries the Omniphony player and
-
-# can read the host player tree through the read-only filesystem grant.
+# Verify the net.whiteblossom.Stremio sandbox hands playback off to the baked host
+# player through the flatpak-spawn portal (Flatpak reserves /usr, so filesystem
+# grants can never expose /usr/lib/omniphony inside the sandbox).
 [group("media")]
 stremio-omniphony-verify:
     #!/usr/bin/bash
@@ -119,11 +119,9 @@ stremio-omniphony-verify:
     fail() { echo "FAIL: $*" >&2; exit 1; }
 
     flatpak info net.whiteblossom.Stremio >/dev/null 2>&1 || fail "net.whiteblossom.Stremio is not installed"
-    echo "Checking in-sandbox player binary reports the orender build..."
+    [ -x /usr/bin/mpv-omniphony ] || fail "/usr/bin/mpv-omniphony not found on host (image missing install-omniphony-stack.sh?)"
+    echo "Checking in-sandbox launcher reaches the host player (orender build)..."
     out="$(flatpak run --command=/app/bin/mpv net.whiteblossom.Stremio --version 2>&1)"
     echo "$out" | head -3
-    echo "$out" | grep -q "orender" || fail "player inside sandbox does not report orender build"
-    echo "Checking host player tree is visible inside the sandbox..."
-    flatpak run --command=sh net.whiteblossom.Stremio -c 'test -x /usr/lib/omniphony/player/bin/mpv' \
-        || fail "/usr/lib/omniphony/player/bin/mpv not visible inside sandbox (--filesystem grant missing?)"
-    echo "OK: sandbox player is the Omniphony build and the :ro mount resolves."
+    echo "$out" | grep -q "orender" || fail "host player did not report orender build (flatpak-spawn hand-off broken?)"
+    echo "OK: Stremio sandbox spawns the host Omniphony player via flatpak-spawn."
