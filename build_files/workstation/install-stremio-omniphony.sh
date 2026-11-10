@@ -10,7 +10,7 @@
 set -eoux pipefail
 
 STREMIO_VERSION="0.1.0"
-STREMIO_URL="https://code-dev.whiteblossom.net/vendor/stremio-linux-shell-omniphony/releases/download/v${STREMIO_VERSION}/net.whiteblossom.Stremio.flatpak"
+STREMIO_URL="https://code-dev.whiteblossom.net/wbadmin/stremio-linux-shell-omniphony/releases/download/flatpak-v${STREMIO_VERSION}/net.whiteblossom.Stremio.flatpak"
 BUNDLE="/tmp/net.whiteblossom.Stremio.flatpak"
 
 echo "Downloading net.whiteblossom.Stremio ${STREMIO_VERSION} from code-dev..."
