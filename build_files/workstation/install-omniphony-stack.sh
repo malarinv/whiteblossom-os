@@ -52,6 +52,10 @@ export LD_LIBRARY_PATH=/usr/lib/omniphony/player/lib${LD_LIBRARY_PATH:+:$LD_LIBR
 exec /usr/lib/omniphony/player/bin/mpv "$@"
 EOF
 chmod 0755 /usr/bin/mpv-omniphony
+# Stremio's external-player table resolves Linux MPV via
+# asLinuxPaths("io.mpv.Mpv", ["/usr/bin/mpv"]) -> /run/host/usr/bin/mpv inside its
+# sandbox (needs /usr/bin/mpv to exist on the host). Point it at the Omniphony player.
+ln -sfn /usr/bin/mpv-omniphony /usr/bin/mpv
 
 echo "Installing harletty-bridge libraries to /usr/lib/omniphony/bridges/..."
 mkdir -p /usr/lib/omniphony/bridges
