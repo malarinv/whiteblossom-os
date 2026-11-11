@@ -12,12 +12,18 @@ FROM scratch AS ctx
 COPY build_files /build_files
 COPY system_files /system_files
 
+# Optional override for the Stremio flatpak bundle URL (e.g. a local mirror during
+# test builds). Empty = the pinned code-dev release URL from install-stremio-omniphony.sh.
+ARG STREMIO_URL=""
+
 # =============================================================================
 # Variant: Workstation (default)
 # Dual-desktop gaming/development (GNOME + KDE + NVIDIA + DX tools)
 # Base: Bazzite GNOME with NVIDIA Open Drivers
 # =============================================================================
 FROM ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable AS workstation
+ARG STREMIO_URL=""
+ENV STREMIO_URL="${STREMIO_URL}"
 
 ## Image Purpose
 # WhiteBlossom OS Workstation: Dual-desktop Linux OS
