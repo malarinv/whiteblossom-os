@@ -14,7 +14,13 @@ STREMIO_URL="https://code-dev.whiteblossom.net/wbadmin/stremio-linux-shell-omnip
 BUNDLE="/tmp/com.stremio.Stremio.Devel-x86_64.flatpak"
 
 echo "Downloading com.stremio.Stremio.Devel ${STREMIO_VERSION} from code-dev..."
-curl -fsSL -o "${BUNDLE}" "${STREMIO_URL}"
+if [ -n "${STREMIO_LOCAL_BUNDLE:-}" ] && [ -f "${STREMIO_LOCAL_BUNDLE}" ]; then
+    # Offline/test builds: use a pre-fetched bundle (set STREMIO_LOCAL_BUNDLE in the
+    # Containerfile build env to a COPY'd file).
+    cp "${STREMIO_LOCAL_BUNDLE}" "${BUNDLE}"
+else
+    curl -fsSL -o "${BUNDLE}" "${STREMIO_URL}"
+fi
 
 # Base image ships flathub; guard for rebuilds on minimal bases.
 flatpak remote-add --if-not-exists --system flathub https://flathub.org/repo/flathub.flatpakrepo || true
