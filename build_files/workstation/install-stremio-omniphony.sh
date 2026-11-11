@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-# Install the prebuilt net.whiteblossom.Stremio flatpak bundle.
+# Install the prebuilt com.stremio.Stremio.Devel flatpak bundle.
 #
 # The bundle is built and validated in Forgejo CI on code-dev
 # (repo vendor/stremio-linux-shell-omniphony) — this script only downloads
@@ -10,20 +10,20 @@
 set -eoux pipefail
 
 STREMIO_VERSION="0.1.1"
-STREMIO_URL="https://code-dev.whiteblossom.net/wbadmin/stremio-linux-shell-omniphony/releases/download/flatpak-v${STREMIO_VERSION}/net.whiteblossom.Stremio-x86_64.flatpak"
-BUNDLE="/tmp/net.whiteblossom.Stremio-x86_64.flatpak"
+STREMIO_URL="https://code-dev.whiteblossom.net/wbadmin/stremio-linux-shell-omniphony/releases/download/flatpak-v${STREMIO_VERSION}/com.stremio.Stremio.Devel-x86_64.flatpak"
+BUNDLE="/tmp/com.stremio.Stremio.Devel-x86_64.flatpak"
 
-echo "Downloading net.whiteblossom.Stremio ${STREMIO_VERSION} from code-dev..."
+echo "Downloading com.stremio.Stremio.Devel ${STREMIO_VERSION} from code-dev..."
 curl -fsSL -o "${BUNDLE}" "${STREMIO_URL}"
 
 # Base image ships flathub; guard for rebuilds on minimal bases.
 flatpak remote-add --if-not-exists --system flathub https://flathub.org/repo/flathub.flatpakrepo || true
 
-echo "Installing net.whiteblossom.Stremio (system-wide)..."
+echo "Installing com.stremio.Stremio.Devel (system-wide)..."
 if ! flatpak install --system --reinstall --noninteractive "${BUNDLE}"; then
-    flatpak uninstall --system --noninteractive net.whiteblossom.Stremio || true
+    flatpak uninstall --system --noninteractive com.stremio.Stremio.Devel || true
     flatpak install --system --noninteractive "${BUNDLE}"
 fi
 
 rm -f "${BUNDLE}"
-echo "net.whiteblossom.Stremio installation complete!"
+echo "com.stremio.Stremio.Devel installation complete!"

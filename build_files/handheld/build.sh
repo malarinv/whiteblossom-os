@@ -79,7 +79,7 @@ echo ""
 # STEP 4: Install Stremio Omniphony Flatpak (prebuilt artifact)
 # ============================================================================
 
-echo "Step 4: Installing net.whiteblossom.Stremio flatpak..."
+echo "Step 4: Installing com.stremio.Stremio.Devel flatpak..."
 echo "======================================================"
 
 if [ -f "${SCRIPT_DIR}/install-stremio-omniphony.sh" ]; then
@@ -126,7 +126,7 @@ echo "=========================================="
 echo ""
 echo "Installed Components:"
 echo "  ✓ Omniphony binaural playback (mpv-omniphony + bridges + Jellyfin shim)"
-echo "  ✓ Stremio with host Atmos hand-off (net.whiteblossom.Stremio)"
+echo "  ✓ Stremio with host Atmos hand-off (com.stremio.Stremio.Devel)"
 echo ""
 echo "Next steps:"
 echo "  1. The Containerfile will commit these changes to OSTree"

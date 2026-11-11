@@ -74,7 +74,7 @@ jellyfin-shim:
 
 # Configure the Stremio hand-off: write the external-player preference into
 # ~/.config/Stremio/settings.json pointing at the in-sandbox launcher /app/bin/mpv
-# (net.whiteblossom.Stremio flatpak). Idempotent: merges keys, preserves the rest.
+# (com.stremio.Stremio.Devel flatpak). Idempotent: merges keys, preserves the rest.
 #
 # KEY NAMES: the exact settings.json keys for Stremio's external-player selection
 # are captured during validation (see whiteblossom-os plan Verification step 5).
@@ -109,7 +109,7 @@ stremio-omniphony-setup:
     echo "player path /app/bin/mpv-omniphony manually, and update this recipe's"
     echo "PATCH keys to match what Stremio wrote."
 
-# Verify the net.whiteblossom.Stremio sandbox hands playback off to the baked host
+# Verify the com.stremio.Stremio.Devel sandbox hands playback off to the baked host
 # player through the flatpak-spawn portal (Flatpak reserves /usr, so filesystem
 # grants can never expose /usr/lib/omniphony inside the sandbox).
 [group("media")]
@@ -118,10 +118,10 @@ stremio-omniphony-verify:
     source /usr/lib/ujust/ujust.sh 2>/dev/null || true
     fail() { echo "FAIL: $*" >&2; exit 1; }
 
-    flatpak info net.whiteblossom.Stremio >/dev/null 2>&1 || fail "net.whiteblossom.Stremio is not installed"
+    flatpak info com.stremio.Stremio.Devel >/dev/null 2>&1 || fail "com.stremio.Stremio.Devel is not installed"
     [ -x /usr/bin/mpv-omniphony ] || fail "/usr/bin/mpv-omniphony not found on host (image missing install-omniphony-stack.sh?)"
     echo "Checking in-sandbox launcher reaches the host player (orender build)..."
-    out="$(flatpak run --command=/app/bin/mpv net.whiteblossom.Stremio --version 2>&1)"
+    out="$(flatpak run --command=/app/bin/mpv com.stremio.Stremio.Devel --version 2>&1)"
     echo "$out" | head -3
     echo "$out" | grep -q "orender" || fail "host player did not report orender build (flatpak-spawn hand-off broken?)"
     echo "OK: Stremio sandbox spawns the host Omniphony player via flatpak-spawn."
